@@ -1,8 +1,11 @@
-# Vercel Deployment Exclusions
+# Vercel Deployment Exclusions to stay under 500MB function limit
 data/
+*.csv
 *.zip
 *.log
 .git/
-__pycache__/
-*.pyc
+.gitignore
 generate_sample_data.py
+ml/train.py
+ml/evaluation.py
+results/plots/
