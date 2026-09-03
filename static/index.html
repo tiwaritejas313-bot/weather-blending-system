@@ -1079,14 +1079,25 @@
         function onStationDropdownChange() {
             const stId = document.getElementById('station-dropdown').value;
             const st = stationsList.find(s => s.id === stId);
-            if (st && map) {
-                map.flyTo([st.lat, st.lon], 7, { duration: 1.2 });
-                if (stationMarkers[stId]) {
-                    stationMarkers[stId].openPopup();
+            if (st) {
+                if (st.nwp !== undefined) document.getElementById('nwp_rainfall_mm').value = st.nwp;
+                if (st.ai !== undefined) document.getElementById('ai_rainfall_mm').value = st.ai;
+                if (st.ens !== undefined) document.getElementById('ensemble_mean_rainfall_mm').value = st.ens;
+                if (st.temp !== undefined) document.getElementById('temperature_2m_c').value = st.temp;
+                if (st.humidity !== undefined) document.getElementById('humidity_pct').value = st.humidity;
+                if (st.pressure !== undefined) document.getElementById('surface_pressure_hpa').value = st.pressure;
+                if (st.regime !== undefined) document.getElementById('weather_regime').value = st.regime;
+
+                if (map) {
+                    map.flyTo([st.lat, st.lon], 7, { duration: 1.2 });
+                    if (stationMarkers[stId]) {
+                        stationMarkers[stId].openPopup();
+                    }
                 }
             }
             executeBlendingInference();
         }
+
 
         function initCharts() {
             const ctxHydro = document.getElementById('chart-hydrograph').getContext('2d');
