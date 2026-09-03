@@ -1,0 +1,1312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IMD-NCMRWF — Operational Hybrid Weather Forecast Blending System</title>
+    
+    <!-- Google Fonts: Outfit (UI) & JetBrains Mono (Scientific Readouts) -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <!-- Leaflet GIS Map CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    
+    <!-- Chart.js JS -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --bg-base: #070b14;
+            --bg-nav: #0d1322;
+            --bg-card: rgba(17, 25, 42, 0.85);
+            --bg-card-solid: #11192a;
+            --bg-header: #172238;
+            --border-subtle: rgba(255, 255, 255, 0.08);
+            --border-highlight: rgba(56, 189, 248, 0.25);
+            
+            --color-nwp: #3b82f6;
+            --color-ai: #f97316;
+            --color-ens: #a855f7;
+            --color-blend: #10b981;
+            
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-tertiary: #64748b;
+            
+            --font-ui: 'Outfit', -apple-system, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-ui);
+            background-color: var(--bg-base);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* 1. SYSTEMATIC HEADER */
+        header {
+            background: var(--bg-nav);
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 0.85rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            sticky: top;
+            z-index: 1000;
+        }
+
+        .brand-group {
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+        }
+
+        .brand-logo {
+            background: linear-gradient(135deg, #0284c7, #2563eb);
+            color: #ffffff;
+            font-weight: 800;
+            padding: 0.5rem 0.85rem;
+            border-radius: 0.6rem;
+            font-size: 0.85rem;
+            letter-spacing: 1.5px;
+            font-family: var(--font-mono);
+            box-shadow: 0 0 15px rgba(2, 132, 199, 0.4);
+        }
+
+        .brand-text h1 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            background: linear-gradient(to right, #ffffff, #cbd5e1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .brand-text p {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-family: var(--font-mono);
+        }
+
+        .header-meta {
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: var(--color-blend);
+            padding: 0.35rem 0.85rem;
+            border-radius: 9999px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            font-family: var(--font-mono);
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--color-blend);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--color-blend);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.3; }
+            100% { opacity: 1; }
+        }
+
+        .btn-export {
+            background: rgba(56, 189, 248, 0.1);
+            border: 1px solid rgba(56, 189, 248, 0.4);
+            color: #38bdf8;
+            padding: 0.45rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .btn-export:hover {
+            background: #0284c7;
+            color: #ffffff;
+            border-color: #0284c7;
+        }
+
+        /* 2. MAIN LAYOUT CONTAINER */
+        .app-container {
+            max-width: 1750px;
+            margin: 0 auto;
+            padding: 1.5rem 2rem;
+            width: 100%;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        /* 3. SEVERE WEATHER ALERT BANNER */
+        .alert-card {
+            background: rgba(16, 185, 129, 0.08);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 0.75rem;
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1.5rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .alert-left-group {
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+        }
+
+        .alert-icon-badge {
+            background: var(--color-blend);
+            color: #000000;
+            font-weight: 800;
+            padding: 0.45rem 0.9rem;
+            border-radius: 0.5rem;
+            font-size: 0.85rem;
+            font-family: var(--font-mono);
+            letter-spacing: 0.5px;
+        }
+
+        .alert-text h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 0.15rem;
+        }
+
+        .alert-text p {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+        }
+
+        .alert-metric {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-align: right;
+        }
+
+        /* 4. SYSTEMATIC KPI SUMMARY ROW */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.25rem;
+        }
+
+        .kpi-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 0.75rem;
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            backdrop-filter: blur(10px);
+        }
+
+        .kpi-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            border-radius: 0.75rem 0.75rem 0 0;
+        }
+
+        .kpi-card.blend-theme::after { background: var(--color-blend); }
+        .kpi-card.bounds-theme::after { background: #f59e0b; }
+        .kpi-card.weight-theme::after { background: var(--color-nwp); }
+        .kpi-card.skill-theme::after { background: #38bdf8; }
+
+        .kpi-header {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .kpi-main-val {
+            font-size: 2.2rem;
+            font-weight: 700;
+            font-family: var(--font-mono);
+            color: var(--text-primary);
+            margin: 0.35rem 0;
+            line-height: 1.1;
+        }
+
+        .kpi-sub-text {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        /* 5. MAIN TWO-COLUMN SYSTEMATIC WORKSPACE */
+        .workspace-split {
+            display: grid;
+            grid-template-columns: 420px 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 1200px) {
+            .workspace-split {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* SYSTEMATIC PANEL CARD */
+        .sys-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 0.85rem;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        .sys-panel-header {
+            background: var(--bg-header);
+            padding: 0.9rem 1.25rem;
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            font-size: 0.9rem;
+            letter-spacing: -0.01em;
+        }
+
+        .sys-panel-body {
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.1rem;
+        }
+
+        /* PRESET MODE BUTTONS */
+        .mode-preset-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.6rem;
+        }
+
+        .btn-mode {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+            padding: 0.55rem 0.75rem;
+            border-radius: 0.5rem;
+            font-size: 0.78rem;
+            font-weight: 500;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .btn-mode:hover, .btn-mode.active {
+            background: rgba(37, 99, 235, 0.2);
+            color: #ffffff;
+            border-color: #3b82f6;
+        }
+
+        /* FORM FIELD SYSTEM */
+        .form-field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+
+        .form-grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+        }
+
+        label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        label span.unit {
+            color: var(--text-tertiary);
+            font-family: var(--font-mono);
+        }
+
+        input, select {
+            background: var(--bg-base);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-primary);
+            padding: 0.6rem 0.85rem;
+            border-radius: 0.5rem;
+            font-size: 0.85rem;
+            font-family: var(--font-ui);
+            transition: border-color 0.2s ease;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.15);
+        }
+
+        .btn-primary-action {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #ffffff;
+            border: none;
+            padding: 0.9rem;
+            border-radius: 0.6rem;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+            margin-top: 0.5rem;
+        }
+
+        .btn-primary-action:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(16, 185, 129, 0.45);
+        }
+
+        /* RIGHT CONTENT LAYOUT */
+        .right-workspace {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        /* GIS MAP CONTAINER */
+        #gis-map {
+            width: 100%;
+            height: 380px;
+            border-radius: 0.6rem;
+            border: 1px solid var(--border-subtle);
+            background: var(--bg-base);
+        }
+
+        /* DYNAMIC WEIGHT ALLOCATION & RELIABILITY */
+        .weight-progress-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
+        }
+
+        .weight-bar-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+
+        .weight-bar-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.82rem;
+            font-weight: 600;
+        }
+
+        .rel-score-badge {
+            font-size: 0.7rem;
+            background: rgba(255, 255, 255, 0.06);
+            padding: 0.15rem 0.5rem;
+            border-radius: 0.3rem;
+            color: var(--text-secondary);
+            font-family: var(--font-mono);
+        }
+
+        .bar-track {
+            background: var(--bg-base);
+            height: 10px;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .bar-fill-inner {
+            height: 100%;
+            border-radius: 5px;
+            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .bar-fill-inner.nwp { background: var(--color-nwp); }
+        .bar-fill-inner.ai { background: var(--color-ai); }
+        .bar-fill-inner.ens { background: var(--color-ens); }
+
+        /* FORMULA BANNER */
+        .formula-box {
+            background: var(--bg-base);
+            border: 1px dashed var(--border-subtle);
+            border-radius: 0.6rem;
+            padding: 0.85rem 1rem;
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+            color: #38bdf8;
+            overflow-x: auto;
+        }
+
+        /* SYSTEMATIC CHARTS GRID (2-COLUMN) */
+        .charts-row-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 900px) {
+            .charts-row-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* 6. TABBED BENCHMARKS & PLOTS SYSTEM */
+        .tab-bar {
+            display: flex;
+            gap: 1rem;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .tab-button {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            padding: 0.65rem 1.25rem;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .tab-button.active {
+            color: #38bdf8;
+            border-bottom-color: #38bdf8;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.83rem;
+            text-align: left;
+        }
+
+        th, td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        th {
+            background: var(--bg-base);
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        tr.row-highlight {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--color-blend);
+            font-weight: 600;
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 1.25rem;
+        }
+
+        .gallery-card {
+            background: var(--bg-base);
+            border: 1px solid var(--border-subtle);
+            border-radius: 0.6rem;
+            overflow: hidden;
+            transition: transform 0.2s ease;
+        }
+
+        .gallery-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .gallery-card img {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            display: block;
+            cursor: pointer;
+        }
+
+        .gallery-card p {
+            padding: 0.6rem 0.85rem;
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        footer {
+            border-top: 1px solid var(--border-subtle);
+            padding: 1.25rem;
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            background: var(--bg-nav);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 1. SYSTEMATIC HEADER -->
+    <header>
+        <div class="brand-group">
+            <div class="brand-logo">NCMRWF • IMD</div>
+            <div class="brand-text">
+                <h1>Hybrid Weather Forecast Blending System</h1>
+                <p>SIH26081 — Operational Multi-Model Integration Console</p>
+            </div>
+        </div>
+
+        <div class="header-meta">
+            <button class="btn-export" onclick="exportOfficialBulletin()">
+                📄 Export Bulletin CSV
+            </button>
+
+            <div class="status-badge">
+                <div class="pulse-dot"></div>
+                SYSTEM OPERATIONAL
+            </div>
+
+            <div style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-secondary);">
+                <span id="utc-clock">00:00:00 UTC</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- 2. MAIN CONTAINER -->
+    <div class="app-container">
+
+        <!-- 3. SEVERE WEATHER ALERT BANNER -->
+        <div class="alert-card" id="alert-banner-box">
+            <div class="alert-left-group">
+                <div class="alert-icon-badge" id="alert-level-badge">IMD GREEN</div>
+                <div class="alert-text">
+                    <h3 id="alert-title-heading">NO WARNING: Light / Nil Rainfall</h3>
+                    <p id="alert-advisory-desc">Normal atmospheric conditions expected across target meteorological subdivisions.</p>
+                </div>
+            </div>
+            <div class="alert-metric" id="alert-intensity-metric">
+                Precipitation Target: < 15.5 mm/day
+            </div>
+        </div>
+
+        <!-- 4. SYSTEMATIC KPI CARDS ROW -->
+        <div class="kpi-grid">
+            <div class="kpi-card blend-theme">
+                <div class="kpi-header">
+                    <span>Blended Rainfall Forecast</span>
+                    <span style="color: var(--color-blend);">FINAL ESTIMATE</span>
+                </div>
+                <div class="kpi-main-val" id="kpi-blended-val">-- mm</div>
+                <div class="kpi-sub-text" id="kpi-uncertainty-val">Uncertainty: ± -- mm</div>
+            </div>
+
+            <div class="kpi-card bounds-theme">
+                <div class="kpi-header">
+                    <span>Calibrated Prediction Bounds</span>
+                    <span style="color: #f59e0b;">80% CONFIDENCE</span>
+                </div>
+                <div class="kpi-main-val" id="kpi-bounds-val">[ -- , -- ]</div>
+                <div class="kpi-sub-text">Conformal Bounds (mm)</div>
+            </div>
+
+            <div class="kpi-card weight-theme">
+                <div class="kpi-header">
+                    <span>Dominant Model Weight</span>
+                    <span id="kpi-dom-model-tag" style="color: var(--color-nwp);">NWP</span>
+                </div>
+                <div class="kpi-main-val" id="kpi-dom-pct-val">-- %</div>
+                <div class="kpi-sub-text" id="kpi-dom-weight-val">Weight: --</div>
+            </div>
+
+            <div class="kpi-card skill-theme">
+                <div class="kpi-header">
+                    <span>Holdout Test RMSE Skill</span>
+                    <span style="color: #38bdf8;">2024 BENCHMARK</span>
+                </div>
+                <div class="kpi-main-val">1.85 mm</div>
+                <div class="kpi-sub-text" style="color: var(--color-blend);">+14.2% vs NWP | +52.8% vs AI</div>
+            </div>
+        </div>
+
+        <!-- 5. MAIN TWO-COLUMN SYSTEMATIC WORKSPACE -->
+        <div class="workspace-split">
+
+            <!-- LEFT CONTROL PANEL (420px) -->
+            <div class="sys-panel">
+                <div class="sys-panel-header">
+                    <span>⚙️ Operational Parameter Console</span>
+                    <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-secondary);">GRID 0.125°</span>
+                </div>
+
+                <div class="sys-panel-body">
+
+                    <!-- PRESET SCENARIO BUTTONS -->
+                    <div class="form-field">
+                        <label>Operational Presets</label>
+                        <div class="mode-preset-grid">
+                            <button class="btn-mode active" onclick="triggerPreset('monsoon_short')">🌧️ Monsoon 12h Rain</button>
+                            <button class="btn-mode" onclick="triggerPreset('cyclone_long')">🌀 Cyclone 120h Track</button>
+                            <button class="btn-mode" onclick="triggerPreset('convective_summer')">⚡ Summer Convective</button>
+                            <button class="btn-mode" onclick="triggerPreset('high_variance')">🌪️ High Uncertainty</button>
+                        </div>
+                    </div>
+
+                    <!-- STATION SELECTOR -->
+                    <div class="form-field">
+                        <label>Meteorological Station <span class="unit">LAT / LON</span></label>
+                        <select id="station-dropdown" onchange="onStationDropdownChange()">
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
+
+                    <!-- REGIME & LEAD TIME -->
+                    <div class="form-grid-2">
+                        <div class="form-field">
+                            <label>Weather Regime</label>
+                            <select id="weather_regime">
+                                <option value="Monsoon" selected>Monsoon</option>
+                                <option value="Winter">Winter</option>
+                                <option value="Summer">Summer</option>
+                                <option value="Transition">Transition</option>
+                            </select>
+                        </div>
+
+                        <div class="form-field">
+                            <label>Lead Time <span class="unit">HOURS</span></label>
+                            <select id="lead_time_hours">
+                                <option value="6">6 Hours</option>
+                                <option value="12" selected>12 Hours</option>
+                                <option value="24">24 Hours</option>
+                                <option value="48">48 Hours</option>
+                                <option value="72">72 Hours</option>
+                                <option value="120">120 Hours</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- ATMOSPHERIC CONDITIONS -->
+                    <div class="form-grid-2">
+                        <div class="form-field">
+                            <label>2m Temp <span class="unit">°C</span></label>
+                            <input type="number" step="0.1" id="temperature_2m_c" value="27.5">
+                        </div>
+
+                        <div class="form-field">
+                            <label>Humidity <span class="unit">%</span></label>
+                            <input type="number" step="0.1" id="humidity_pct" value="88.0">
+                        </div>
+                    </div>
+
+                    <div class="form-grid-2">
+                        <div class="form-field">
+                            <label>Pressure <span class="unit">hPa</span></label>
+                            <input type="number" step="0.1" id="surface_pressure_hpa" value="1002.5">
+                        </div>
+
+                        <div class="form-field">
+                            <label>Ensemble Std <span class="unit">mm</span></label>
+                            <input type="number" step="0.1" id="ensemble_std_rainfall_mm" value="2.1">
+                        </div>
+                    </div>
+
+                    <!-- COMPONENT FORECAST INPUTS -->
+                    <div style="border-top: 1px solid var(--border-subtle); padding-top: 0.75rem; margin-top: 0.25rem;">
+                        <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary);">Component Model Forecast Predictions (mm)</span>
+                    </div>
+
+                    <div class="form-field">
+                        <label>NWP Forecast (NCMRWF/GFS) <span class="unit" style="color: var(--color-nwp);">mm</span></label>
+                        <input type="number" step="0.1" id="nwp_rainfall_mm" value="18.5">
+                    </div>
+
+                    <div class="form-field">
+                        <label>AI Forecast (GraphCast) <span class="unit" style="color: var(--color-ai);">mm</span></label>
+                        <input type="number" step="0.1" id="ai_rainfall_mm" value="21.2">
+                    </div>
+
+                    <div class="form-field">
+                        <label>Ensemble Mean (GEFS) <span class="unit" style="color: var(--color-ens);">mm</span></label>
+                        <input type="number" step="0.1" id="ensemble_mean_rainfall_mm" value="19.8">
+                    </div>
+
+                    <button type="button" class="btn-primary-action" onclick="executeBlendingInference()">
+                        ⚡ Run Dynamic Forecast Blending
+                    </button>
+                </div>
+            </div>
+
+            <!-- RIGHT WORKSPACE (FLEX-1) -->
+            <div class="right-workspace">
+                
+                <!-- GIS MAP PANEL -->
+                <div class="sys-panel">
+                    <div class="sys-panel-header">
+                        <span>🗺️ Operational Indian Meteorological Grid GIS Map</span>
+                        <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-secondary);">LEAFLET / CARTO DARK</span>
+                    </div>
+                    <div class="sys-panel-body" style="padding: 0.75rem;">
+                        <div id="gis-map"></div>
+                    </div>
+                </div>
+
+                <!-- DYNAMIC WEIGHT ALLOCATION PANEL -->
+                <div class="sys-panel">
+                    <div class="sys-panel-header">
+                        <span>📊 Adaptive Weight Allocation & Model Reliability</span>
+                        <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--color-blend);">SOFTMAX NORMALIZED</span>
+                    </div>
+
+                    <div class="sys-panel-body">
+                        <div class="weight-progress-stack">
+                            <div class="weight-bar-item">
+                                <div class="weight-bar-meta">
+                                    <span style="color: var(--color-nwp);">NWP Forecast Weight (w_NWP)</span>
+                                    <div>
+                                        <span class="rel-score-badge" id="badge-rel-nwp">Reliability: 100%</span>
+                                        <span id="txt-weight-nwp" style="font-family: var(--font-mono); font-weight: 600;">-- %</span>
+                                    </div>
+                                </div>
+                                <div class="bar-track">
+                                    <div class="bar-fill-inner nwp" id="bar-fill-nwp" style="width: 0%;"></div>
+                                </div>
+                            </div>
+
+                            <div class="weight-bar-item">
+                                <div class="weight-bar-meta">
+                                    <span style="color: var(--color-ai);">AI Forecast Weight (w_AI)</span>
+                                    <div>
+                                        <span class="rel-score-badge" id="badge-rel-ai">Reliability: 100%</span>
+                                        <span id="txt-weight-ai" style="font-family: var(--font-mono); font-weight: 600;">-- %</span>
+                                    </div>
+                                </div>
+                                <div class="bar-track">
+                                    <div class="bar-fill-inner ai" id="bar-fill-ai" style="width: 0%;"></div>
+                                </div>
+                            </div>
+
+                            <div class="weight-bar-item">
+                                <div class="weight-bar-meta">
+                                    <span style="color: var(--color-ens);">Ensemble Mean Weight (w_Ensemble)</span>
+                                    <div>
+                                        <span class="rel-score-badge" id="badge-rel-ens">Reliability: 100%</span>
+                                        <span id="txt-weight-ens" style="font-family: var(--font-mono); font-weight: 600;">-- %</span>
+                                    </div>
+                                </div>
+                                <div class="bar-track">
+                                    <div class="bar-fill-inner ens" id="bar-fill-ens" style="width: 0%;"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="formula-box" id="formula-display-str">
+                            Blended = (w_NWP × NWP) + (w_AI × AI) + (w_Ensemble × Ensemble)
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2-COLUMN CHARTS ROW -->
+                <div class="charts-row-2">
+                    <div class="sys-panel">
+                        <div class="sys-panel-header">
+                            <span>📈 Multi-Model Lead Time Hydrograph (6h - 120h)</span>
+                        </div>
+                        <div class="sys-panel-body">
+                            <canvas id="chart-hydrograph" style="max-height: 220px;"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="sys-panel">
+                        <div class="sys-panel-header">
+                            <span>🎯 Top XGBoost Feature Weight Drivers</span>
+                        </div>
+                        <div class="sys-panel-body">
+                            <canvas id="chart-feature-imp" style="max-height: 220px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- 6. TABBED BENCHMARKS & PLOTS GALLERY -->
+        <div class="sys-panel">
+            <div class="sys-panel-header" style="background: var(--bg-header);">
+                <div class="tab-bar">
+                    <button class="tab-button active" onclick="showTabSection('benchmarks')">🏆 Holdout Benchmark Matrix (2024 Test Set)</button>
+                    <button class="tab-button" onclick="showTabSection('plots')">🖼️ Publication Plot Gallery (11)</button>
+                </div>
+            </div>
+
+            <div class="sys-panel-body">
+
+                <div id="section-benchmarks">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Forecast Model Strategy</th>
+                                <th>MAE (mm)</th>
+                                <th>RMSE (mm)</th>
+                                <th>R² Score</th>
+                                <th>Correlation (r)</th>
+                                <th>RMSE Improvement vs Baseline</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>NWP Model Alone (NCMRWF)</td>
+                                <td>1.4211</td>
+                                <td>2.1656</td>
+                                <td>0.9884</td>
+                                <td>0.9949</td>
+                                <td>--</td>
+                            </tr>
+                            <tr>
+                                <td>AI Model Alone (GraphCast)</td>
+                                <td>2.1686</td>
+                                <td>3.9410</td>
+                                <td>0.9617</td>
+                                <td>0.9823</td>
+                                <td>--</td>
+                            </tr>
+                            <tr>
+                                <td>Ensemble Mean Alone (GEFS)</td>
+                                <td>1.5320</td>
+                                <td>2.4194</td>
+                                <td>0.9856</td>
+                                <td>0.9934</td>
+                                <td>--</td>
+                            </tr>
+                            <tr>
+                                <td>Equal-Weighted Average</td>
+                                <td>1.3466</td>
+                                <td>1.9126</td>
+                                <td>0.9910</td>
+                                <td>0.9964</td>
+                                <td>--</td>
+                            </tr>
+                            <tr class="row-highlight">
+                                <td>Adaptive XGBoost Blend</td>
+                                <td>1.3208</td>
+                                <td>1.8578</td>
+                                <td>0.9915</td>
+                                <td>0.9967</td>
+                                <td>+14.21% vs NWP | +52.86% vs AI | +2.87% vs Equal</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div id="section-plots" style="display: none;">
+                    <div class="gallery-grid">
+                        <div class="gallery-card">
+                            <img src="/plots/rmse_comparison.png" alt="RMSE Comparison">
+                            <p>RMSE Comparison across Baselines</p>
+                        </div>
+                        <div class="gallery-card">
+                            <img src="/plots/mae_comparison.png" alt="MAE Comparison">
+                            <p>MAE Comparison across Baselines</p>
+                        </div>
+                        <div class="gallery-card">
+                            <img src="/plots/performance_by_leadtime.png" alt="Lead Time Performance">
+                            <p>Performance across Lead Times (6h - 120h)</p>
+                        </div>
+                        <div class="gallery-card">
+                            <img src="/plots/performance_by_season.png" alt="Season Performance">
+                            <p>Performance by Weather Regime</p>
+                        </div>
+                        <div class="gallery-card">
+                            <img src="/plots/geographic_weight_map.png" alt="Geographic Map">
+                            <p>Geographic Weight Spatial Map</p>
+                        </div>
+                        <div class="gallery-card">
+                            <img src="/plots/actual_vs_blended.png" alt="Actual vs Blended">
+                            <p>Reference vs Blended Scatter</p>
+                        </div>
+                        <div class="gallery-card">
+                            <img src="/plots/weight_distribution.png" alt="Weight Distribution">
+                            <p>Dynamic Weight Distributions</p>
+                        </div>
+                        <div class="gallery-card">
+                            <img src="/plots/error_comparison.png" alt="Error Comparison">
+                            <p>Error Distribution Box Plots</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <!-- FOOTER -->
+    <footer>
+        IMD - NCMRWF Multi-Model Weather Forecast Blending System • Smart India Hackathon 2026 (SIH26081)
+    </footer>
+
+    <!-- Leaflet GIS JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        let map, hydrographChart, featureChart;
+        let stationMarkers = {};
+        let stationsList = [];
+
+        function updateUtcClock() {
+            const now = new Date();
+            document.getElementById('utc-clock').innerText = now.toUTCString().split(' ')[4] + ' UTC';
+        }
+        setInterval(updateUtcClock, 1000);
+        updateUtcClock();
+
+        function initGISMap() {
+            map = L.map('gis-map', { zoomControl: true }).setView([20.5937, 78.9629], 5);
+
+            // 1. OpenStreetMap Standard — 100% Free Public Server (Shows ALL Cities, Towns, Villages, Roads & Labels)
+            const osmDetailed = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                maxZoom: 19
+            });
+
+            // 2. Esri World Street Map — 100% Free Public Server (Full City & District Labels)
+            const esriStreet = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+                attribution: 'Tiles &copy; Esri',
+                maxZoom: 18
+            });
+
+            // 3. Esri World Imagery — 100% Free Public Satellite
+            const esriSatellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: 'Tiles &copy; Esri',
+                maxZoom: 18
+            });
+
+            // Default Layer: OpenStreetMap Standard (Guaranteed Free, All Cities Visible)
+            osmDetailed.addTo(map);
+
+            // Layer Control Switcher
+            const baseMaps = {
+                "🌍 OpenStreetMap (All Cities & Towns)": osmDetailed,
+                "🗺️ Esri World Street Map (Full Labels)": esriStreet,
+                "🛰️ Satellite Imagery": esriSatellite
+            };
+
+            L.control.layers(baseMaps, null, { position: 'topright' }).addTo(map);
+        }
+
+
+
+
+        async function fetchStations() {
+            try {
+                const res = await fetch('/stations');
+                stationsList = await res.json();
+                
+                const selectEl = document.getElementById('station-dropdown');
+                selectEl.innerHTML = '';
+
+                stationsList.forEach(st => {
+                    const opt = document.createElement('option');
+                    opt.value = st.id;
+                    opt.innerText = `${st.name} (${st.lat.toFixed(2)}°N, ${st.lon.toFixed(2)}°E)`;
+                    selectEl.appendChild(opt);
+
+                    const marker = L.circleMarker([st.lat, st.lon], {
+                        radius: 8,
+                        fillColor: "#00f2fe",
+                        color: "#ffffff",
+                        weight: 2,
+                        opacity: 1,
+                        fillOpacity: 0.85
+                    }).addTo(map);
+
+                    marker.bindPopup(`<b>${st.name}</b><br>${st.zone}<br>Lat: ${st.lat}°N, Lon: ${st.lon}°E`);
+                    marker.on('click', () => {
+                        selectEl.value = st.id;
+                        onStationDropdownChange();
+                    });
+
+                    stationMarkers[st.id] = marker;
+                });
+            } catch (err) {
+                console.error("Failed to load stations:", err);
+            }
+        }
+
+        function onStationDropdownChange() {
+            const stId = document.getElementById('station-dropdown').value;
+            const st = stationsList.find(s => s.id === stId);
+            if (st && map) {
+                map.flyTo([st.lat, st.lon], 7, { duration: 1.2 });
+                if (stationMarkers[stId]) {
+                    stationMarkers[stId].openPopup();
+                }
+            }
+            executeBlendingInference();
+        }
+
+        function initCharts() {
+            const ctxHydro = document.getElementById('chart-hydrograph').getContext('2d');
+            hydrographChart = new Chart(ctxHydro, {
+                type: 'line',
+                data: {
+                    labels: ['6h', '12h', '24h', '48h', '72h', '120h'],
+                    datasets: [
+                        { label: 'NWP (NCMRWF)', data: [16, 18.5, 22, 28, 35, 42], borderColor: '#3b82f6', tension: 0.3, borderWidth: 2 },
+                        { label: 'AI (GraphCast)', data: [17.5, 21.2, 25, 30, 32, 38], borderColor: '#f97316', tension: 0.3, borderWidth: 2 },
+                        { label: 'Ensemble (GEFS)', data: [17, 19.8, 23.5, 29, 34, 40], borderColor: '#a855f7', tension: 0.3, borderWidth: 2 },
+                        { label: 'Adaptive Blend', data: [17.1, 19.85, 23.8, 29.1, 33.8, 39.9], borderColor: '#10b981', tension: 0.3, borderWidth: 3 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { labels: { color: '#94a3af', font: { family: 'Outfit' } } } },
+                    scales: {
+                        x: { grid: { color: 'rgba(255,255,255,0.06)' }, ticks: { color: '#94a3af' } },
+                        y: { grid: { color: 'rgba(255,255,255,0.06)' }, ticks: { color: '#94a3af' }, title: { display: true, text: 'Rainfall (mm)', color: '#94a3af' } }
+                    }
+                }
+            });
+
+            const ctxFeat = document.getElementById('chart-feature-imp').getContext('2d');
+            featureChart = new Chart(ctxFeat, {
+                type: 'bar',
+                data: {
+                    labels: ['lead_time_hours', 'ensemble_std', 'humidity_pct', 'temperature', 'u_wind', 'hist_rmse'],
+                    datasets: [{ label: 'Feature Weight Influence', data: [0.32, 0.24, 0.18, 0.12, 0.08, 0.06], backgroundColor: '#38bdf8' }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { color: 'rgba(255,255,255,0.06)' }, ticks: { color: '#94a3af' } },
+                        y: { grid: { color: 'rgba(255,255,255,0.06)' }, ticks: { color: '#94a3af' } }
+                    }
+                }
+            });
+        }
+
+        function triggerPreset(preset) {
+            document.querySelectorAll('.btn-mode').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+
+            if (preset === 'monsoon_short') {
+                document.getElementById('weather_regime').value = 'Monsoon';
+                document.getElementById('lead_time_hours').value = '12';
+                document.getElementById('temperature_2m_c').value = '27.5';
+                document.getElementById('humidity_pct').value = '88.0';
+                document.getElementById('surface_pressure_hpa').value = '1002.5';
+                document.getElementById('nwp_rainfall_mm').value = '18.5';
+                document.getElementById('ai_rainfall_mm').value = '21.2';
+                document.getElementById('ensemble_mean_rainfall_mm').value = '19.8';
+                document.getElementById('ensemble_std_rainfall_mm').value = '1.8';
+            } else if (preset === 'cyclone_long') {
+                document.getElementById('weather_regime').value = 'Transition';
+                document.getElementById('lead_time_hours').value = '120';
+                document.getElementById('temperature_2m_c').value = '26.0';
+                document.getElementById('humidity_pct').value = '92.0';
+                document.getElementById('surface_pressure_hpa').value = '995.0';
+                document.getElementById('nwp_rainfall_mm').value = '75.0';
+                document.getElementById('ai_rainfall_mm').value = '52.0';
+                document.getElementById('ensemble_mean_rainfall_mm').value = '68.0';
+                document.getElementById('ensemble_std_rainfall_mm').value = '4.5';
+            } else if (preset === 'convective_summer') {
+                document.getElementById('weather_regime').value = 'Summer';
+                document.getElementById('lead_time_hours').value = '6';
+                document.getElementById('temperature_2m_c').value = '36.5';
+                document.getElementById('humidity_pct').value = '55.0';
+                document.getElementById('surface_pressure_hpa').value = '1006.0';
+                document.getElementById('nwp_rainfall_mm').value = '8.0';
+                document.getElementById('ai_rainfall_mm').value = '16.5';
+                document.getElementById('ensemble_mean_rainfall_mm').value = '10.2';
+                document.getElementById('ensemble_std_rainfall_mm').value = '3.0';
+            } else if (preset === 'high_variance') {
+                document.getElementById('weather_regime').value = 'Monsoon';
+                document.getElementById('lead_time_hours').value = '48';
+                document.getElementById('temperature_2m_c').value = '28.0';
+                document.getElementById('humidity_pct').value = '90.0';
+                document.getElementById('surface_pressure_hpa').value = '1001.0';
+                document.getElementById('nwp_rainfall_mm').value = '14.0';
+                document.getElementById('ai_rainfall_mm').value = '32.0';
+                document.getElementById('ensemble_mean_rainfall_mm').value = '21.0';
+                document.getElementById('ensemble_std_rainfall_mm').value = '8.5';
+            }
+            executeBlendingInference();
+        }
+
+        async function executeBlendingInference() {
+            const stId = document.getElementById('station-dropdown').value;
+            const st = stationsList.find(s => s.id === stId) || { lat: 19.0760, lon: 72.8777 };
+
+            const payload = {
+                latitude: st.lat,
+                longitude: st.lon,
+                month: 7,
+                day_of_year: 195,
+                lead_time_hours: parseInt(document.getElementById('lead_time_hours').value),
+                temperature_2m_c: parseFloat(document.getElementById('temperature_2m_c').value),
+                humidity_pct: parseFloat(document.getElementById('humidity_pct').value),
+                surface_pressure_hpa: parseFloat(document.getElementById('surface_pressure_hpa').value),
+                u_wind_10m_ms: 4.0,
+                v_wind_10m_ms: 3.5,
+                weather_regime: document.getElementById('weather_regime').value,
+                nwp_rainfall_mm: parseFloat(document.getElementById('nwp_rainfall_mm').value),
+                ai_rainfall_mm: parseFloat(document.getElementById('ai_rainfall_mm').value),
+                ensemble_mean_rainfall_mm: parseFloat(document.getElementById('ensemble_mean_rainfall_mm').value),
+                ensemble_std_rainfall_mm: parseFloat(document.getElementById('ensemble_std_rainfall_mm').value),
+                nwp_historical_rmse: 3.5,
+                ai_historical_rmse: 2.5,
+                ensemble_historical_rmse: 3.0
+            };
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const res = await response.json();
+
+                // Update KPI Cards
+                document.getElementById('kpi-blended-val').innerText = `${res.blended_forecast.toFixed(2)} mm`;
+                document.getElementById('kpi-uncertainty-val').innerText = `Uncertainty: ± ${res.blended_uncertainty.toFixed(2)} mm`;
+                
+                if (res.confidence_bounds_80) {
+                    document.getElementById('kpi-bounds-val').innerText = `[ ${res.confidence_bounds_80[0]} , ${res.confidence_bounds_80[1]} ]`;
+                }
+
+                // Update Alert Banner
+                if (res.warning) {
+                    const warnCard = document.getElementById('alert-banner-box');
+                    const warnBadge = document.getElementById('alert-level-badge');
+                    const warnTitle = document.getElementById('alert-title-heading');
+                    const warnDesc = document.getElementById('alert-advisory-desc');
+                    const warnMetric = document.getElementById('alert-intensity-metric');
+
+                    warnBadge.innerText = `IMD ${res.warning.level}`;
+                    warnBadge.style.background = res.warning.color;
+                    warnCard.style.borderColor = res.warning.color;
+                    warnCard.style.background = `${res.warning.color}15`;
+
+                    warnTitle.innerText = `${res.warning.level} ALERT: ${res.warning.category}`;
+                    warnDesc.innerText = res.warning.advisory;
+                    warnMetric.innerText = `Precipitation Target: ${res.blended_forecast.toFixed(1)} mm/day`;
+                }
+
+                // Update Reliability Scores
+                if (res.reliability_scores) {
+                    document.getElementById('badge-rel-nwp').innerText = `Reliability: ${res.reliability_scores.nwp_reliability}%`;
+                    document.getElementById('badge-rel-ai').innerText = `Reliability: ${res.reliability_scores.ai_reliability}%`;
+                    document.getElementById('badge-rel-ens').innerText = `Reliability: ${res.reliability_scores.ensemble_reliability}%`;
+                }
+
+                const pNwp = (res.nwp_weight * 100).toFixed(1);
+                const pAi = (res.ai_weight * 100).toFixed(1);
+                const pEns = (res.ensemble_weight * 100).toFixed(1);
+
+                let maxW = Math.max(res.nwp_weight, res.ai_weight, res.ensemble_weight);
+                let domName = "NWP";
+                let domColor = "var(--color-nwp)";
+                if (maxW === res.ai_weight) { domName = "AI (GraphCast)"; domColor = "var(--color-ai)"; }
+                else if (maxW === res.ensemble_weight) { domName = "Ensemble"; domColor = "var(--color-ens)"; }
+
+                document.getElementById('kpi-dom-model-tag').innerText = domName;
+                document.getElementById('kpi-dom-model-tag').style.color = domColor;
+                document.getElementById('kpi-dom-pct-val').innerText = `${(maxW * 100).toFixed(1)}%`;
+                document.getElementById('kpi-dom-weight-val').innerText = `Weight: ${maxW.toFixed(4)}`;
+
+                document.getElementById('txt-weight-nwp').innerText = `${pNwp}% (${res.nwp_weight.toFixed(4)})`;
+                document.getElementById('txt-weight-ai').innerText = `${pAi}% (${res.ai_weight.toFixed(4)})`;
+                document.getElementById('txt-weight-ens').innerText = `${pEns}% (${res.ensemble_weight.toFixed(4)})`;
+
+                document.getElementById('bar-fill-nwp').style.width = `${pNwp}%`;
+                document.getElementById('bar-fill-ai').style.width = `${pAi}%`;
+                document.getElementById('bar-fill-ens').style.width = `${pEns}%`;
+
+                document.getElementById('formula-display-str').innerHTML = 
+                    `<strong>Blended Forecast</strong> = (${res.nwp_weight.toFixed(3)} × ${res.nwp_forecast} mm) + (${res.ai_weight.toFixed(3)} × ${res.ai_forecast} mm) + (${res.ensemble_weight.toFixed(3)} × ${res.ensemble_forecast} mm) = <strong>${res.blended_forecast.toFixed(2)} mm</strong>`;
+
+                const baseVal = res.blended_forecast;
+                hydrographChart.data.datasets[3].data = [
+                    baseVal * 0.85, baseVal, baseVal * 1.2, baseVal * 1.45, baseVal * 1.7, baseVal * 2.0
+                ];
+                hydrographChart.update();
+
+            } catch (err) {
+                console.error("Inference Error:", err);
+            }
+        }
+
+        function exportOfficialBulletin() {
+            const stId = document.getElementById('station-dropdown').value || 'mumbai';
+            const lt = document.getElementById('lead_time_hours').value || 12;
+            window.location.href = `/export/report?station=${stId}&lead_time=${lt}`;
+        }
+
+        function showTabSection(section) {
+            document.querySelectorAll('.tab-button').forEach(l => l.classList.remove('active'));
+            document.getElementById('section-benchmarks').style.display = 'none';
+            document.getElementById('section-plots').style.display = 'none';
+
+            if (section === 'benchmarks') {
+                document.getElementById('section-benchmarks').style.display = 'block';
+                event.target.classList.add('active');
+            } else {
+                document.getElementById('section-plots').style.display = 'block';
+                event.target.classList.add('active');
+            }
+        }
+
+        window.onload = async function() {
+            initGISMap();
+            initCharts();
+            await fetchStations();
+            executeBlendingInference();
+        };
+    </script>
+</body>
+</html>

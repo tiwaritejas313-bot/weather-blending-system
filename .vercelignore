@@ -1,0 +1,8 @@
+# Vercel Deployment Exclusions
+data/
+*.zip
+*.log
+.git/
+__pycache__/
+*.pyc
+generate_sample_data.py

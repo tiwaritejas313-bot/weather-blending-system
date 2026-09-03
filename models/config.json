@@ -1,0 +1,107 @@
+{
+  "train_end_date": "2022-12-31",
+  "val_end_date": "2023-12-31",
+  "test_start_date": "2024-01-01",
+  "feature_names": [
+    "latitude",
+    "longitude",
+    "lead_time_hours",
+    "temperature_2m_c",
+    "humidity_pct",
+    "surface_pressure_hpa",
+    "u_wind_10m_ms",
+    "v_wind_10m_ms",
+    "ensemble_std_rainfall_mm",
+    "nwp_historical_rmse",
+    "ai_historical_rmse",
+    "ensemble_historical_rmse",
+    "month_sin",
+    "month_cos",
+    "day_sin",
+    "day_cos",
+    "regime_monsoon",
+    "regime_winter",
+    "regime_summer",
+    "regime_transition"
+  ],
+  "softmax_temperature": 0.5,
+  "xgboost_params": {
+    "n_estimators": 250,
+    "max_depth": 6,
+    "learning_rate": 0.04,
+    "subsample": 0.85,
+    "colsample_bytree": 0.85,
+    "random_state": 42,
+    "n_jobs": -1
+  },
+  "random_seed": 42,
+  "test_metrics": [
+    {
+      "Model": "NWP",
+      "MAE": 1.4211,
+      "RMSE": 2.1656,
+      "R2": 0.9884,
+      "Correlation": 0.9949
+    },
+    {
+      "Model": "AI",
+      "MAE": 2.1686,
+      "RMSE": 3.941,
+      "R2": 0.9617,
+      "Correlation": 0.9823
+    },
+    {
+      "Model": "Ensemble",
+      "MAE": 1.532,
+      "RMSE": 2.4194,
+      "R2": 0.9856,
+      "Correlation": 0.9934
+    },
+    {
+      "Model": "Equal Weight",
+      "MAE": 1.3466,
+      "RMSE": 1.9126,
+      "R2": 0.991,
+      "Correlation": 0.9964
+    },
+    {
+      "Model": "Adaptive XGBoost",
+      "MAE": 1.3208,
+      "RMSE": 1.8578,
+      "R2": 0.9915,
+      "Correlation": 0.9967
+    }
+  ],
+  "improvements": [
+    {
+      "Baseline Model": "NWP",
+      "Baseline RMSE": 2.1656,
+      "Adaptive RMSE": 1.8578,
+      "Improvement (%)": 14.21
+    },
+    {
+      "Baseline Model": "AI",
+      "Baseline RMSE": 3.941,
+      "Adaptive RMSE": 1.8578,
+      "Improvement (%)": 52.86
+    },
+    {
+      "Baseline Model": "Ensemble",
+      "Baseline RMSE": 2.4194,
+      "Adaptive RMSE": 1.8578,
+      "Improvement (%)": 23.21
+    },
+    {
+      "Baseline Model": "Equal Weight",
+      "Baseline RMSE": 1.9126,
+      "Adaptive RMSE": 1.8578,
+      "Improvement (%)": 2.87
+    },
+    {
+      "Baseline Model": "Adaptive XGBoost",
+      "Baseline RMSE": 1.8578,
+      "Adaptive RMSE": 1.8578,
+      "Improvement (%)": 0.0
+    }
+  ]
+}
