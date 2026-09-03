@@ -1070,11 +1070,14 @@
                     });
 
                     stationMarkers[st.id] = marker;
-                });
+                if (stationsList.length > 0) {
+                    onStationDropdownChange();
+                }
             } catch (err) {
                 console.error("Failed to load stations:", err);
             }
         }
+
 
         function onStationDropdownChange() {
             const stId = document.getElementById('station-dropdown').value;
