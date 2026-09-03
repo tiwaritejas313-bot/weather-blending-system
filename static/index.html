@@ -1054,22 +1054,26 @@
                     opt.innerText = `${st.name} (${st.lat.toFixed(2)}°N, ${st.lon.toFixed(2)}°E)`;
                     selectEl.appendChild(opt);
 
-                    const marker = L.circleMarker([st.lat, st.lon], {
-                        radius: 8,
-                        fillColor: "#00f2fe",
-                        color: "#ffffff",
-                        weight: 2,
-                        opacity: 1,
-                        fillOpacity: 0.85
-                    }).addTo(map);
+                    if (map) {
+                        const marker = L.circleMarker([st.lat, st.lon], {
+                            radius: 8,
+                            fillColor: "#00f2fe",
+                            color: "#ffffff",
+                            weight: 2,
+                            opacity: 1,
+                            fillOpacity: 0.85
+                        }).addTo(map);
 
-                    marker.bindPopup(`<b>${st.name}</b><br>${st.zone}<br>Lat: ${st.lat}°N, Lon: ${st.lon}°E`);
-                    marker.on('click', () => {
-                        selectEl.value = st.id;
-                        onStationDropdownChange();
-                    });
+                        marker.bindPopup(`<b>${st.name}</b><br>${st.zone}<br>Lat: ${st.lat}°N, Lon: ${st.lon}°E`);
+                        marker.on('click', () => {
+                            selectEl.value = st.id;
+                            onStationDropdownChange();
+                        });
 
-                    stationMarkers[st.id] = marker;
+                        stationMarkers[st.id] = marker;
+                    }
+                });
+
                 if (stationsList.length > 0) {
                     onStationDropdownChange();
                 }
@@ -1077,6 +1081,7 @@
                 console.error("Failed to load stations:", err);
             }
         }
+
 
 
         function onStationDropdownChange() {

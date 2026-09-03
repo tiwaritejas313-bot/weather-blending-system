@@ -87,15 +87,16 @@ class BlendedForecastResponseSchema(BaseModel):
 
 
 STATIONS_DATABASE = [
-    {"id": "mumbai", "name": "Mumbai Met Centre", "zone": "West Coast / Konkan", "lat": 19.0760, "lon": 72.8777, "elev_m": 14},
-    {"id": "delhi", "name": "Delhi Regional MC", "zone": "North Plains / NCR", "lat": 28.6139, "lon": 77.2090, "elev_m": 216},
-    {"id": "chennai", "name": "Chennai Cyclone Warning Ctr", "zone": "South East Coast", "lat": 13.0827, "lon": 80.2707, "elev_m": 7},
-    {"id": "kolkata", "name": "Kolkata Alipore Met Office", "zone": "Gangetic West Bengal", "lat": 22.5726, "lon": 88.3639, "elev_m": 9},
-    {"id": "cherrapunji", "name": "Sohra / Cherrapunji Observatory", "zone": "Northeast Plateau (High Precipitation)", "lat": 25.2986, "lon": 91.7308, "elev_m": 1484},
-    {"id": "bengaluru", "name": "Bengaluru Met Centre", "zone": "South Interior Karnataka", "lat": 12.9716, "lon": 77.5946, "elev_m": 920},
-    {"id": "srinagar", "name": "Srinagar Weather Station", "zone": "Western Himalayas", "lat": 34.0837, "lon": 74.7973, "elev_m": 1585},
-    {"id": "bhubaneswar", "name": "Bhubaneswar Cyclone Office", "zone": "Odisha Coastal Zone", "lat": 20.2961, "lon": 85.8245, "elev_m": 45},
+    {"id": "mumbai", "name": "Mumbai Met Centre", "zone": "West Coast / Konkan", "lat": 19.0760, "lon": 72.8777, "elev_m": 14, "nwp": 42.5, "ai": 48.2, "ens": 45.0, "temp": 28.5, "humidity": 89.0, "pressure": 1004.2, "regime": "Monsoon"},
+    {"id": "delhi", "name": "Delhi Regional MC", "zone": "North Plains / NCR", "lat": 28.6139, "lon": 77.2090, "elev_m": 216, "nwp": 12.0, "ai": 10.5, "ens": 11.2, "temp": 34.0, "humidity": 55.0, "pressure": 1008.5, "regime": "Summer"},
+    {"id": "chennai", "name": "Chennai Cyclone Warning Ctr", "zone": "South East Coast", "lat": 13.0827, "lon": 80.2707, "elev_m": 7, "nwp": 28.5, "ai": 32.0, "ens": 30.1, "temp": 30.2, "humidity": 82.0, "pressure": 1006.1, "regime": "Monsoon"},
+    {"id": "kolkata", "name": "Kolkata Alipore Met Office", "zone": "Gangetic West Bengal", "lat": 22.5726, "lon": 88.3639, "elev_m": 9, "nwp": 35.0, "ai": 38.5, "ens": 36.2, "temp": 29.0, "humidity": 85.0, "pressure": 1003.8, "regime": "Monsoon"},
+    {"id": "cherrapunji", "name": "Sohra / Cherrapunji Observatory", "zone": "Northeast Plateau (High Precipitation)", "lat": 25.2986, "lon": 91.7308, "elev_m": 1484, "nwp": 112.0, "ai": 125.0, "ens": 118.5, "temp": 22.0, "humidity": 98.0, "pressure": 995.4, "regime": "Monsoon"},
+    {"id": "bengaluru", "name": "Bengaluru Met Centre", "zone": "South Interior Karnataka", "lat": 12.9716, "lon": 77.5946, "elev_m": 920, "nwp": 14.2, "ai": 16.0, "ens": 15.1, "temp": 24.5, "humidity": 72.0, "pressure": 1012.0, "regime": "Transition"},
+    {"id": "srinagar", "name": "Srinagar Weather Station", "zone": "Western Himalayas", "lat": 34.0837, "lon": 74.7973, "elev_m": 1585, "nwp": 8.5, "ai": 7.2, "ens": 7.9, "temp": 18.0, "humidity": 60.0, "pressure": 1015.2, "regime": "Winter"},
+    {"id": "bhubaneswar", "name": "Bhubaneswar Cyclone Office", "zone": "Odisha Coastal Zone", "lat": 20.2961, "lon": 85.8245, "elev_m": 45, "nwp": 52.0, "ai": 58.0, "ens": 54.5, "temp": 29.5, "humidity": 91.0, "pressure": 1001.5, "regime": "Monsoon"},
 ]
+
 
 
 @app.get("/")
