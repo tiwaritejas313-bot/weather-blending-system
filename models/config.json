@@ -67,7 +67,7 @@
     {
       "Model": "Adaptive XGBoost",
       "MAE": 1.3208,
-      "RMSE": 1.8578,
+      "RMSE": 1.8576,
       "R2": 0.9915,
       "Correlation": 0.9967
     }
@@ -76,31 +76,31 @@
     {
       "Baseline Model": "NWP",
       "Baseline RMSE": 2.1656,
-      "Adaptive RMSE": 1.8578,
-      "Improvement (%)": 14.21
+      "Adaptive RMSE": 1.8576,
+      "Improvement (%)": 14.22
     },
     {
       "Baseline Model": "AI",
       "Baseline RMSE": 3.941,
-      "Adaptive RMSE": 1.8578,
+      "Adaptive RMSE": 1.8576,
       "Improvement (%)": 52.86
     },
     {
       "Baseline Model": "Ensemble",
       "Baseline RMSE": 2.4194,
-      "Adaptive RMSE": 1.8578,
-      "Improvement (%)": 23.21
+      "Adaptive RMSE": 1.8576,
+      "Improvement (%)": 23.22
     },
     {
       "Baseline Model": "Equal Weight",
       "Baseline RMSE": 1.9126,
-      "Adaptive RMSE": 1.8578,
-      "Improvement (%)": 2.87
+      "Adaptive RMSE": 1.8576,
+      "Improvement (%)": 2.88
     },
     {
       "Baseline Model": "Adaptive XGBoost",
-      "Baseline RMSE": 1.8578,
-      "Adaptive RMSE": 1.8578,
+      "Baseline RMSE": 1.8576,
+      "Adaptive RMSE": 1.8576,
       "Improvement (%)": 0.0
     }
   ]

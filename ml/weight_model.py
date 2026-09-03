@@ -16,11 +16,12 @@ from typing import Tuple, Dict, Any, Optional, List
 
 import numpy as np
 import pandas as pd
-import xgboost as xgb
+from sklearn.ensemble import ExtraTreesRegressor
 from sklearn.multioutput import MultiOutputRegressor
 import joblib
 
 from ml import config
+
 
 
 
@@ -61,10 +62,12 @@ class AdaptiveWeightModel:
     """
 
     def __init__(self, params: Optional[Dict[str, Any]] = None):
-        self.params = params or config.XGBOOST_PARAMS
-        base_xgb = xgb.XGBRegressor(**self.params)
-        self.model = MultiOutputRegressor(base_xgb)
+        self.params = params or {}
+        base_tree = ExtraTreesRegressor(n_estimators=30, max_depth=8, random_state=42, n_jobs=-1)
+        self.model = MultiOutputRegressor(base_tree)
         self.is_fitted = False
+
+
 
     def fit(self, X: np.ndarray, df_train: pd.DataFrame) -> "AdaptiveWeightModel":
         """
