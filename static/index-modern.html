@@ -6,35 +6,42 @@
     <title>IMD-NCMRWF — Operational Hybrid Weather Forecast Blending System</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=Work+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
         :root {
-            --bg-base: #f5f1e6;
+            --bg-base: #f5f5f7;
+            --bg-nav: rgba(255, 255, 255, 0.78);
             --bg-card: #ffffff;
-            --bg-card-alt: #eae4d2;
-            --bg-field: #ffffff;
-            --border: #111111;
-            --shadow-c: #111111;
+            --bg-card-solid: #ffffff;
+            --bg-header: #fafafa;
+            --bg-field: #f0f0f2;
+            --border-subtle: #e2e2e6;
+            --border-strong: #d2d2d7;
 
-            --color-nwp: #2d5bff;
-            --color-ai: #ff5a36;
-            --color-ens: #7c4dff;
-            --color-blend: #1f9d55;
+            --color-nwp: #0071e3;
+            --color-ai: #ff9500;
+            --color-ens: #af52de;
+            --color-blend: #30b158;
 
-            --accent: #ffd400;
-            --accent-ink: #111111;
+            --accent: #ffd60a;
+            --accent-ink: #1d1d1f;
 
-            --text-primary: #111111;
-            --text-secondary: #4a463d;
-            --text-tertiary: #7a7565;
+            --text-primary: #1d1d1f;
+            --text-secondary: #6e6e73;
+            --text-tertiary: #a1a1a6;
 
-            --font-display: "Unbounded", ui-sans-serif, sans-serif;
-            --font-ui: "Work Sans", ui-sans-serif, system-ui, sans-serif;
-            --font-mono: "JetBrains Mono", ui-monospace, monospace;
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+            --shadow-md: 0 1px 2px rgba(0,0,0,.04), 0 10px 26px rgba(0, 0, 0, 0.07);
+            --shadow-lg: 0 2px 6px rgba(0,0,0,.05), 0 20px 40px rgba(0, 0, 0, 0.1);
+
+            --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+            --radius: 18px;
+            --radius-sm: 12px;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -47,13 +54,14 @@
             display: flex;
             flex-direction: column;
             line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
         }
 
-        h1, h2, h3 { font-family: var(--font-display); }
+        h1, h2, h3 { letter-spacing: -0.02em; }
 
         @keyframes cardRise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
         @media (prefers-reduced-motion: no-preference) {
-            .kpi-card, .sys-panel, .alert-card { opacity: 0; animation: cardRise .6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+            .kpi-card, .sys-panel, .alert-card { opacity: 0; animation: cardRise .7s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
             .alert-card { animation-delay: .02s; }
             .kpi-grid .kpi-card:nth-child(1) { animation-delay: .08s; }
             .kpi-grid .kpi-card:nth-child(2) { animation-delay: .14s; }
@@ -66,69 +74,76 @@
             .charts-row-2 .sys-panel:nth-of-type(2) { animation-delay: .50s; }
         }
 
-        .hard { border: 2.5px solid var(--border); box-shadow: 5px 5px 0 var(--shadow-c); }
-        .hard-sm { border: 2px solid var(--border); box-shadow: 3px 3px 0 var(--shadow-c); }
-        .press { transition: transform .12s ease-out, box-shadow .12s ease-out; }
-        .press:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--shadow-c); }
-        .press:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--shadow-c); }
-
         /* 1. HEADER */
         header {
-            position: sticky; top: 0; z-index: 1000;
-            background: var(--bg-base);
-            border-bottom: 3px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: var(--bg-nav);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-bottom: 1px solid var(--border-subtle);
             padding: 0.85rem 2rem;
-            display: flex; justify-content: space-between; align-items: center;
-            flex-wrap: wrap; gap: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
         }
 
         .brand-group { display: flex; align-items: center; gap: 1rem; }
 
         .brand-logo {
-            background: var(--accent); color: var(--accent-ink);
-            font-weight: 700; padding: 0.5rem 0.85rem;
-            border: 2px solid var(--border);
-            font-size: 0.8rem; letter-spacing: 0.3px; font-family: var(--font-mono);
+            background: var(--accent);
+            color: var(--accent-ink);
+            font-weight: 700;
+            padding: 0.5rem 0.85rem;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            letter-spacing: 0.3px;
+            font-family: var(--font-mono);
         }
 
-        .brand-text h1 { font-size: 1.1rem; font-weight: 700; color: var(--text-primary); }
-        .brand-text p { font-size: 0.72rem; color: var(--text-secondary); font-family: var(--font-mono); margin-top: 2px; }
+        .brand-text h1 { font-size: 1.15rem; font-weight: 600; color: var(--text-primary); }
+        .brand-text p { font-size: 0.75rem; color: var(--text-secondary); font-family: var(--font-mono); margin-top: 1px; }
 
         .header-meta { display: flex; align-items: center; gap: 0.75rem; }
 
         .status-badge {
             display: flex; align-items: center; gap: 0.5rem;
-            background: var(--bg-card);
-            border: 2px solid var(--border);
-            color: var(--color-blend);
+            background: rgba(48, 177, 88, 0.1);
+            border: 1px solid rgba(48, 177, 88, 0.25);
+            color: #248a42;
             padding: 0.4rem 0.85rem;
-            font-size: 0.72rem; font-weight: 700; font-family: var(--font-mono);
+            border-radius: 9999px;
+            font-size: 0.75rem; font-weight: 600; font-family: var(--font-mono);
         }
 
         .pulse-dot {
             width: 7px; height: 7px; background: var(--color-blend); border-radius: 50%;
+            box-shadow: 0 0 0 rgba(48,177,88,.5);
             animation: pulse 2s infinite;
         }
         @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(31,157,85,.45); }
-            70% { box-shadow: 0 0 0 6px rgba(31,157,85,0); }
-            100% { box-shadow: 0 0 0 0 rgba(31,157,85,0); }
+            0% { box-shadow: 0 0 0 0 rgba(48,177,88,.45); }
+            70% { box-shadow: 0 0 0 6px rgba(48,177,88,0); }
+            100% { box-shadow: 0 0 0 0 rgba(48,177,88,0); }
         }
 
         .btn-export {
-            background: var(--bg-card);
-            border: 2px solid var(--border);
+            background: #ffffff;
+            border: 1px solid var(--border-strong);
             color: var(--text-primary);
             padding: 0.5rem 1rem;
-            font-size: 0.76rem; font-weight: 600; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.03em;
+            border-radius: 9999px;
+            font-size: 0.8rem; font-weight: 600; font-family: var(--font-ui);
             cursor: pointer;
+            transition: all 0.15s ease;
             display: flex; align-items: center; gap: 0.4rem;
             text-decoration: none;
-            box-shadow: 3px 3px 0 var(--shadow-c);
-            transition: transform .12s ease-out, box-shadow .12s ease-out;
         }
-        .btn-export:hover { transform: translate(-2px, -2px); box-shadow: 5px 5px 0 var(--shadow-c); }
-        .btn-export:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--shadow-c); }
+        .btn-export:hover { border-color: var(--text-primary); transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+        .btn-export:active { transform: scale(0.97); }
 
         /* 2. MAIN CONTAINER */
         .app-container {
@@ -138,25 +153,25 @@
 
         /* 3. ALERT BANNER */
         .alert-card {
-            background: var(--bg-card);
-            border: 2.5px solid var(--border);
-            border-left: 8px solid var(--color-blend);
+            background: #ffffff;
+            border: 1px solid var(--border-subtle);
+            border-left: 5px solid var(--color-blend);
+            border-radius: var(--radius-sm);
             padding: 1.1rem 1.5rem;
             display: flex; align-items: center; justify-content: space-between; gap: 1.5rem;
-            box-shadow: 5px 5px 0 var(--shadow-c);
-            transition: border-color .3s ease;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .alert-left-group { display: flex; align-items: center; gap: 1.25rem; }
 
         .alert-icon-badge {
             background: var(--color-blend); color: #ffffff; font-weight: 700;
-            border: 2px solid var(--border);
-            padding: 0.45rem 0.9rem; font-size: 0.78rem;
+            padding: 0.45rem 0.9rem; border-radius: 9999px; font-size: 0.8rem;
             font-family: var(--font-mono); letter-spacing: 0.3px;
         }
 
-        .alert-text h3 { font-family: var(--font-ui); font-size: 1rem; font-weight: 700; margin-bottom: 0.15rem; }
+        .alert-text h3 { font-size: 1rem; font-weight: 600; margin-bottom: 0.15rem; }
         .alert-text p { font-size: 0.82rem; color: var(--text-secondary); }
         .alert-metric { font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-secondary); text-align: right; }
 
@@ -167,18 +182,18 @@
 
         .kpi-card {
             background: var(--bg-card);
-            border: 2.5px solid var(--border);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius);
             padding: 1.35rem;
             display: flex; flex-direction: column; justify-content: space-between;
             position: relative; overflow: hidden;
-            box-shadow: 5px 5px 0 var(--shadow-c);
-            transition: transform .18s ease-out, box-shadow .18s ease-out;
+            box-shadow: var(--shadow-sm);
+            transition: box-shadow .25s cubic-bezier(0.16,1,0.3,1), transform .25s cubic-bezier(0.16,1,0.3,1);
         }
-        .kpi-card:hover { transform: translate(-2px, -2px); box-shadow: 7px 7px 0 var(--shadow-c); }
+        .kpi-card:hover { box-shadow: var(--shadow-md); transform: translateY(-3px); }
 
         .kpi-card::after {
-            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 6px;
-            border-bottom: 2px solid var(--border);
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
         }
         .kpi-card.blend-theme::after { background: var(--color-blend); }
         .kpi-card.bounds-theme::after { background: var(--color-ai); }
@@ -186,14 +201,15 @@
         .kpi-card.skill-theme::after { background: var(--accent); }
 
         .kpi-card.kpi-hero {
-            background: var(--bg-card-alt);
+            background: radial-gradient(120% 140% at 100% 0%, rgba(48,177,88,0.10), transparent 60%), var(--bg-card);
             padding: 1.75rem 1.9rem;
         }
-        .kpi-card.kpi-hero:hover { transform: translate(-3px, -3px); box-shadow: 8px 8px 0 var(--shadow-c); }
+        .kpi-card.kpi-hero::after { height: 4px; }
+        .kpi-card.kpi-hero:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
 
         .kpi-header {
-            font-size: 0.72rem; font-weight: 700; color: var(--text-secondary);
-            text-transform: uppercase; letter-spacing: 0.06em; font-family: var(--font-mono);
+            font-size: 0.72rem; font-weight: 600; color: var(--text-secondary);
+            text-transform: uppercase; letter-spacing: 0.05em;
             display: flex; justify-content: space-between;
         }
 
@@ -202,7 +218,7 @@
             color: var(--text-primary); margin: 0.4rem 0; line-height: 1.1;
             font-variant-numeric: tabular-nums;
         }
-        .kpi-hero .kpi-main-val { font-size: 3.2rem; font-weight: 700; }
+        .kpi-hero .kpi-main-val { font-size: 3.4rem; font-weight: 650; letter-spacing: -0.01em; }
         .kpi-sub-text { font-size: 0.8rem; color: var(--text-secondary); }
         .kpi-hero .kpi-sub-text { font-size: 0.88rem; }
 
@@ -212,17 +228,18 @@
 
         .sys-panel {
             background: var(--bg-card);
-            border: 2.5px solid var(--border);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius);
             display: flex; flex-direction: column; overflow: hidden;
-            box-shadow: 5px 5px 0 var(--shadow-c);
+            box-shadow: var(--shadow-sm);
         }
 
         .sys-panel-header {
-            background: var(--bg-card-alt);
-            padding: 0.9rem 1.35rem;
-            border-bottom: 2.5px solid var(--border);
+            background: var(--bg-header);
+            padding: 0.95rem 1.35rem;
+            border-bottom: 1px solid var(--border-subtle);
             display: flex; justify-content: space-between; align-items: center;
-            font-weight: 700; font-size: 0.85rem;
+            font-weight: 600; font-size: 0.88rem;
         }
 
         .sys-panel-body { padding: 1.35rem; display: flex; flex-direction: column; gap: 1.15rem; }
@@ -231,20 +248,19 @@
         .mode-preset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
 
         .btn-mode {
-            background: var(--bg-card);
-            border: 2px solid var(--border);
+            background: var(--bg-field);
+            border: 1px solid transparent;
             color: var(--text-secondary);
-            padding: 0.6rem 0.8rem;
-            font-size: 0.76rem; font-weight: 600; cursor: pointer; text-align: left;
+            padding: 0.6rem 0.8rem; border-radius: var(--radius-sm);
+            font-size: 0.78rem; font-weight: 500; cursor: pointer; text-align: left;
+            transition: all 0.15s ease;
             display: flex; align-items: center; gap: 0.45rem;
-            box-shadow: 2px 2px 0 var(--shadow-c);
-            transition: transform .12s ease-out, box-shadow .12s ease-out, background .12s ease;
         }
-        .btn-mode:hover { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--shadow-c); }
-        .btn-mode:active { transform: translate(1px, 1px); box-shadow: 1px 1px 0 var(--shadow-c); }
+        .btn-mode:hover { background: #e8e8ec; }
+        .btn-mode:active { transform: scale(0.97); }
         .btn-mode.active {
-            background: var(--accent); color: var(--accent-ink);
-            font-weight: 700;
+            background: var(--accent); color: var(--accent-ink); border-color: var(--accent);
+            font-weight: 600;
         }
 
         /* FORMS */
@@ -252,89 +268,90 @@
         .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
 
         label {
-            font-size: 0.74rem; color: var(--text-secondary); font-weight: 600;
+            font-size: 0.76rem; color: var(--text-secondary); font-weight: 500;
             display: flex; justify-content: space-between;
         }
         label span.unit { color: var(--text-tertiary); font-family: var(--font-mono); }
 
         input, select {
             background: var(--bg-field);
-            border: 2px solid var(--border);
+            border: 1px solid transparent;
             color: var(--text-primary);
-            padding: 0.6rem 0.8rem;
+            padding: 0.65rem 0.85rem; border-radius: var(--radius-sm);
             font-size: 0.85rem; font-family: var(--font-ui);
-            transition: box-shadow .12s ease-out;
+            transition: all 0.15s ease;
         }
         input:focus, select:focus {
-            outline: none;
-            box-shadow: 3px 3px 0 var(--accent);
+            outline: none; background: #ffffff;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px rgba(255, 214, 10, 0.25);
         }
 
         .btn-primary-action {
             background: var(--accent); color: var(--accent-ink);
-            border: 2.5px solid var(--border); padding: 0.95rem;
-            font-weight: 700; font-size: 0.9rem; cursor: pointer;
-            text-transform: uppercase; letter-spacing: 0.03em; font-family: var(--font-mono);
-            margin-top: 0.5rem;
-            box-shadow: 4px 4px 0 var(--shadow-c);
-            transition: transform .12s ease-out, box-shadow .12s ease-out;
+            border: none; padding: 0.95rem; border-radius: var(--radius-sm);
+            font-weight: 700; font-size: 0.95rem; cursor: pointer;
+            transition: all 0.15s ease; margin-top: 0.5rem;
+            box-shadow: var(--shadow-sm);
         }
-        .btn-primary-action:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--shadow-c); }
-        .btn-primary-action:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--shadow-c); }
+        .btn-primary-action:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
+        .btn-primary-action:active { transform: scale(0.98); }
 
         /* RIGHT WORKSPACE */
         .right-workspace { display: flex; flex-direction: column; gap: 1.5rem; }
 
         .map-panel { position: relative; padding: 0 !important; overflow: hidden; }
         .map-panel #gis-map {
-            width: 100%; height: 460px;
+            width: 100%; height: 460px; border-radius: var(--radius);
             border: none; background: var(--bg-field);
         }
         .map-float-label, .map-float-tag {
             position: absolute; left: 16px; z-index: 500;
-            background: var(--bg-card);
-            border: 2px solid var(--border);
-            box-shadow: 3px 3px 0 var(--shadow-c);
-            font-weight: 700; color: var(--text-primary);
+            background: rgba(255,255,255,0.75);
+            backdrop-filter: blur(16px) saturate(180%);
+            -webkit-backdrop-filter: blur(16px) saturate(180%);
+            border: 1px solid rgba(255,255,255,0.6);
+            box-shadow: var(--shadow-sm);
+            font-weight: 600; color: var(--text-primary);
         }
-        .map-float-label { top: 16px; padding: 0.55rem 1rem; font-size: 0.82rem; }
-        .map-float-tag { top: 62px; padding: 0.35rem 0.8rem; font-family: var(--font-mono); font-size: 0.64rem; color: var(--text-secondary); font-weight: 600; }
+        .map-float-label { top: 16px; padding: 0.6rem 1.05rem; border-radius: 9999px; font-size: 0.85rem; }
+        .map-float-tag { top: 66px; padding: 0.4rem 0.85rem; border-radius: 9999px; font-family: var(--font-mono); font-size: 0.66rem; color: var(--text-secondary); font-weight: 600; }
 
         .station-pulse { position: relative; width: 14px; height: 14px; }
         .station-pulse::before {
             content: ''; position: absolute; inset: -9px; border-radius: 50%;
-            background: rgba(255, 212, 0, 0.45);
+            background: rgba(255, 214, 10, 0.4);
             animation: pulseRing 1.8s cubic-bezier(0.16,1,0.3,1) infinite;
         }
         .station-pulse::after {
             content: ''; position: absolute; inset: 0; border-radius: 50%;
-            background: #111111; border: 2px solid #ffffff; box-shadow: 0 1px 4px rgba(0,0,0,0.35);
+            background: #1d1d1f; border: 2px solid #ffffff; box-shadow: 0 1px 4px rgba(0,0,0,0.25);
         }
         @keyframes pulseRing { 0% { transform: scale(0.5); opacity: 0.9; } 100% { transform: scale(2); opacity: 0; } }
 
         /* WEIGHT BARS */
         .weight-progress-stack { display: flex; flex-direction: column; gap: 0.9rem; }
         .weight-bar-item { display: flex; flex-direction: column; gap: 0.35rem; }
-        .weight-bar-meta { display: flex; justify-content: space-between; align-items: center; font-size: 0.82rem; font-weight: 700; }
+        .weight-bar-meta { display: flex; justify-content: space-between; align-items: center; font-size: 0.82rem; font-weight: 600; }
 
         .rel-score-badge {
-            font-size: 0.68rem; background: var(--bg-card-alt); padding: 0.15rem 0.5rem;
-            border: 1.5px solid var(--border); color: var(--text-secondary); font-family: var(--font-mono);
+            font-size: 0.7rem; background: var(--bg-field); padding: 0.15rem 0.55rem;
+            border-radius: 9999px; color: var(--text-secondary); font-family: var(--font-mono);
         }
 
-        .bar-track { background: var(--bg-card); height: 12px; border: 2px solid var(--border); overflow: hidden; }
-        .bar-fill-inner { height: 100%; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+        .bar-track { background: var(--bg-field); height: 10px; border-radius: 9999px; overflow: hidden; }
+        .bar-fill-inner { height: 100%; border-radius: 9999px; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
         .bar-fill-inner.nwp { background: var(--color-nwp); }
         .bar-fill-inner.ai { background: var(--color-ai); }
         .bar-fill-inner.ens { background: var(--color-ens); }
 
         .formula-box {
-            background: var(--text-primary); border: 2.5px solid var(--border);
-            padding: 0.9rem 1.1rem;
-            font-family: var(--font-mono); font-size: 0.8rem; color: var(--bg-base);
+            background: var(--bg-field); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm); padding: 0.9rem 1.1rem;
+            font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-primary);
             overflow-x: auto;
         }
-        .formula-box strong { color: var(--accent); }
+        .formula-box strong { color: var(--color-nwp); }
 
         /* CHARTS */
         .charts-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
@@ -342,44 +359,36 @@
 
         /* TABS & TABLE */
         .tab-bar {
-            display: flex; gap: 0; background: var(--bg-card);
-            border: 2px solid var(--border); width: fit-content;
+            display: flex; gap: 4px; background: var(--bg-field);
+            padding: 4px; border-radius: 9999px; width: fit-content;
         }
         .tab-button {
-            background: none; border: none; border-right: 2px solid var(--border); color: var(--text-secondary);
-            padding: 0.6rem 1.1rem;
-            font-size: 0.8rem; font-weight: 700; cursor: pointer; font-family: var(--font-mono);
-            transition: transform .1s ease-out;
+            background: none; border: none; color: var(--text-secondary);
+            padding: 0.55rem 1.1rem; border-radius: 9999px;
+            font-size: 0.83rem; font-weight: 600; cursor: pointer;
+            transition: all 0.15s ease;
         }
-        .tab-button:last-child { border-right: none; }
-        .tab-button.active { color: var(--accent-ink); background: var(--accent); }
+        .tab-button.active { color: var(--text-primary); background: #ffffff; box-shadow: var(--shadow-sm); }
         .tab-button:active { transform: scale(0.96); }
 
         table { width: 100%; border-collapse: collapse; font-size: 0.83rem; text-align: left; }
-        th, td { padding: 0.8rem 1rem; border-bottom: 2px solid var(--border); }
-        th { color: var(--text-secondary); font-weight: 700; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; background: var(--bg-card-alt); font-family: var(--font-mono); }
-        tr.row-highlight { background: var(--accent); font-weight: 700; color: var(--accent-ink); }
+        th, td { padding: 0.8rem 1rem; border-bottom: 1px solid var(--border-subtle); }
+        th { color: var(--text-secondary); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.03em; }
+        tr.row-highlight { background: rgba(255, 214, 10, 0.14); font-weight: 700; }
+        tr.row-highlight td:first-child { border-left: 3px solid var(--accent); }
 
         .gallery-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.25rem; }
         .gallery-card {
-            background: var(--bg-card); border: 2px solid var(--border);
-            overflow: hidden; box-shadow: 3px 3px 0 var(--shadow-c);
-            transition: transform .15s ease-out, box-shadow .15s ease-out;
+            background: var(--bg-field); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm); overflow: hidden; transition: all 0.2s ease;
         }
-        .gallery-card:hover { transform: translate(-2px, -2px); box-shadow: 5px 5px 0 var(--shadow-c); }
+        .gallery-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
         .gallery-card img { width: 100%; height: 180px; object-fit: cover; display: block; cursor: pointer; }
-        .gallery-card p { padding: 0.65rem 0.9rem; font-size: 0.78rem; color: var(--text-secondary); text-align: center; border-top: 2px solid var(--border); }
+        .gallery-card p { padding: 0.65rem 0.9rem; font-size: 0.78rem; color: var(--text-secondary); text-align: center; }
 
         footer {
-            padding: 1.5rem; text-align: center; font-size: 0.78rem;
-            color: var(--text-secondary); font-family: var(--font-mono);
-            border-top: 3px solid var(--border);
-        }
-
-        @media (max-width: 480px) {
-            header { padding: 0.75rem 1rem; }
-            .app-container { padding: 1.25rem 1rem; }
-            .header-meta { flex-wrap: wrap; justify-content: flex-start; row-gap: 0.6rem; }
+            padding: 1.5rem; text-align: center; font-size: 0.8rem;
+            color: var(--text-tertiary); font-family: var(--font-mono);
         }
     </style>
 </head>
@@ -437,7 +446,7 @@
             </div>
 
             <div class="kpi-card skill-theme">
-                <div class="kpi-header"><span>Holdout Test RMSE Skill</span><span style="color: #8a6d00;">2024 BENCHMARK</span></div>
+                <div class="kpi-header"><span>Holdout Test RMSE Skill</span><span style="color: #b8860b;">2024 BENCHMARK</span></div>
                 <div class="kpi-main-val">1.85 mm</div>
                 <div class="kpi-sub-text" style="color: var(--color-blend);">+14.2% vs NWP | +52.8% vs AI</div>
             </div>
@@ -448,7 +457,7 @@
             <div class="sys-panel">
                 <div class="sys-panel-header">
                     <span>⚙️ Operational Parameter Console</span>
-                    <span style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-secondary);">GRID 0.125°</span>
+                    <span style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-secondary);">GRID 0.125°</span>
                 </div>
 
                 <div class="sys-panel-body">
@@ -500,8 +509,8 @@
                         <div class="form-field"><label>Ensemble Std <span class="unit">mm</span></label><input type="number" step="0.1" id="ensemble_std_rainfall_mm" value="2.1"></div>
                     </div>
 
-                    <div style="border-top: 2px solid var(--border); padding-top: 0.75rem; margin-top: 0.25rem;">
-                        <span style="font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.03em;">Component Model Forecast Predictions (mm)</span>
+                    <div style="border-top: 1px solid var(--border-subtle); padding-top: 0.75rem; margin-top: 0.25rem;">
+                        <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary);">Component Model Forecast Predictions (mm)</span>
                     </div>
 
                     <div class="form-field"><label>NWP Forecast (NCMRWF/GFS) <span class="unit" style="color: var(--color-nwp);">mm</span></label><input type="number" step="0.1" id="nwp_rainfall_mm" value="18.5"></div>
@@ -523,28 +532,28 @@
                 <div class="sys-panel">
                     <div class="sys-panel-header">
                         <span>📊 Adaptive Weight Allocation & Model Reliability</span>
-                        <span style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--color-blend);">SOFTMAX NORMALIZED</span>
+                        <span style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--color-blend);">SOFTMAX NORMALIZED</span>
                     </div>
                     <div class="sys-panel-body">
                         <div class="weight-progress-stack">
                             <div class="weight-bar-item">
                                 <div class="weight-bar-meta">
                                     <span style="color: var(--color-nwp);">NWP Forecast Weight (w_NWP)</span>
-                                    <div><span class="rel-score-badge" id="badge-rel-nwp">Reliability: 100%</span> <span id="txt-weight-nwp" style="font-family: var(--font-mono); font-weight: 700;">-- %</span></div>
+                                    <div><span class="rel-score-badge" id="badge-rel-nwp">Reliability: 100%</span> <span id="txt-weight-nwp" style="font-family: var(--font-mono); font-weight: 600;">-- %</span></div>
                                 </div>
                                 <div class="bar-track"><div class="bar-fill-inner nwp" id="bar-fill-nwp" style="width: 0%;"></div></div>
                             </div>
                             <div class="weight-bar-item">
                                 <div class="weight-bar-meta">
                                     <span style="color: var(--color-ai);">AI Forecast Weight (w_AI)</span>
-                                    <div><span class="rel-score-badge" id="badge-rel-ai">Reliability: 100%</span> <span id="txt-weight-ai" style="font-family: var(--font-mono); font-weight: 700;">-- %</span></div>
+                                    <div><span class="rel-score-badge" id="badge-rel-ai">Reliability: 100%</span> <span id="txt-weight-ai" style="font-family: var(--font-mono); font-weight: 600;">-- %</span></div>
                                 </div>
                                 <div class="bar-track"><div class="bar-fill-inner ai" id="bar-fill-ai" style="width: 0%;"></div></div>
                             </div>
                             <div class="weight-bar-item">
                                 <div class="weight-bar-meta">
                                     <span style="color: var(--color-ens);">Ensemble Mean Weight (w_Ensemble)</span>
-                                    <div><span class="rel-score-badge" id="badge-rel-ens">Reliability: 100%</span> <span id="txt-weight-ens" style="font-family: var(--font-mono); font-weight: 700;">-- %</span></div>
+                                    <div><span class="rel-score-badge" id="badge-rel-ens">Reliability: 100%</span> <span id="txt-weight-ens" style="font-family: var(--font-mono); font-weight: 600;">-- %</span></div>
                                 </div>
                                 <div class="bar-track"><div class="bar-fill-inner ens" id="bar-fill-ens" style="width: 0%;"></div></div>
                             </div>
@@ -568,7 +577,7 @@
         </div>
 
         <div class="sys-panel">
-            <div class="sys-panel-header" style="background: var(--bg-card-alt);">
+            <div class="sys-panel-header" style="background: var(--bg-header);">
                 <div class="tab-bar">
                     <button class="tab-button active" onclick="showTabSection('benchmarks')">🏆 Holdout Benchmark Matrix (2024 Test Set)</button>
                     <button class="tab-button" onclick="showTabSection('plots')">🖼️ Publication Plot Gallery (11)</button>
@@ -701,7 +710,7 @@
                     if (map) {
                         const marker = L.circleMarker([st.lat, st.lon], {
                             radius: 7,
-                            fillColor: "#111111",
+                            fillColor: "#1d1d1f",
                             color: "#ffffff",
                             weight: 2,
                             opacity: 1,
@@ -759,18 +768,18 @@
                 data: {
                     labels: ['6h', '12h', '24h', '48h', '72h', '120h'],
                     datasets: [
-                        { label: 'NWP (NCMRWF)', data: [16, 18.5, 22, 28, 35, 42], borderColor: '#2d5bff', tension: 0.2, borderWidth: 2 },
-                        { label: 'AI (GraphCast)', data: [17.5, 21.2, 25, 30, 32, 38], borderColor: '#ff5a36', tension: 0.2, borderWidth: 2 },
-                        { label: 'Ensemble (GEFS)', data: [17, 19.8, 23.5, 29, 34, 40], borderColor: '#7c4dff', tension: 0.2, borderWidth: 2 },
-                        { label: 'Adaptive Blend', data: [17.1, 19.85, 23.8, 29.1, 33.8, 39.9], borderColor: '#111111', backgroundColor: 'rgba(255,212,0,0.28)', fill: true, tension: 0.2, borderWidth: 3 }
+                        { label: 'NWP (NCMRWF)', data: [16, 18.5, 22, 28, 35, 42], borderColor: '#0071e3', tension: 0.35, borderWidth: 2 },
+                        { label: 'AI (GraphCast)', data: [17.5, 21.2, 25, 30, 32, 38], borderColor: '#ff9500', tension: 0.35, borderWidth: 2 },
+                        { label: 'Ensemble (GEFS)', data: [17, 19.8, 23.5, 29, 34, 40], borderColor: '#af52de', tension: 0.35, borderWidth: 2 },
+                        { label: 'Adaptive Blend', data: [17.1, 19.85, 23.8, 29.1, 33.8, 39.9], borderColor: '#1d1d1f', backgroundColor: 'rgba(255,214,10,0.18)', fill: true, tension: 0.35, borderWidth: 3 }
                     ]
                 },
                 options: {
                     responsive: true,
-                    plugins: { legend: { labels: { color: '#4a463d', font: { family: 'Work Sans' } } } },
+                    plugins: { legend: { labels: { color: '#6e6e73', font: { family: 'inherit' } } } },
                     scales: {
-                        x: { grid: { color: 'rgba(17,17,17,0.1)' }, ticks: { color: '#4a463d', font: { family: 'JetBrains Mono', size: 10 } } },
-                        y: { grid: { color: 'rgba(17,17,17,0.1)' }, ticks: { color: '#4a463d', font: { family: 'JetBrains Mono', size: 10 } }, title: { display: true, text: 'Rainfall (mm)', color: '#4a463d' } }
+                        x: { grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { color: '#6e6e73' } },
+                        y: { grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { color: '#6e6e73' }, title: { display: true, text: 'Rainfall (mm)', color: '#6e6e73' } }
                     }
                 }
             });
@@ -780,15 +789,15 @@
                 type: 'bar',
                 data: {
                     labels: ['lead_time_hours', 'ensemble_std', 'humidity_pct', 'temperature', 'u_wind', 'hist_rmse'],
-                    datasets: [{ label: 'Feature Weight Influence', data: [0.32, 0.24, 0.18, 0.12, 0.08, 0.06], backgroundColor: '#ffd400', borderColor: '#111111', borderWidth: 2 }]
+                    datasets: [{ label: 'Feature Weight Influence', data: [0.32, 0.24, 0.18, 0.12, 0.08, 0.06], backgroundColor: '#ffd60a' }]
                 },
                 options: {
                     indexAxis: 'y',
                     responsive: true,
                     plugins: { legend: { display: false } },
                     scales: {
-                        x: { grid: { color: 'rgba(17,17,17,0.1)' }, ticks: { color: '#4a463d', font: { family: 'JetBrains Mono', size: 10 } } },
-                        y: { grid: { color: 'rgba(17,17,17,0.1)' }, ticks: { color: '#4a463d', font: { family: 'JetBrains Mono', size: 10 } } }
+                        x: { grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { color: '#6e6e73' } },
+                        y: { grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { color: '#6e6e73' } }
                     }
                 }
             });

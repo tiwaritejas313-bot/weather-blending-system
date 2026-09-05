@@ -116,6 +116,30 @@ def serve_dashboard():
     return {"message": "SIH26081 Blending System API Online. Dashboard HTML not found."}
 
 
+@app.get("/about")
+def serve_landing():
+    static_file = os.path.join(config.BASE_DIR, "static", "landing.html")
+    if os.path.exists(static_file):
+        return FileResponse(static_file)
+    return {"message": "Landing page HTML not found."}
+
+
+@app.get("/classic")
+def serve_classic_dashboard():
+    static_file = os.path.join(config.BASE_DIR, "static", "index-classic.html")
+    if os.path.exists(static_file):
+        return FileResponse(static_file)
+    return {"message": "Classic dashboard HTML not found."}
+
+
+@app.get("/modern")
+def serve_modern_dashboard():
+    static_file = os.path.join(config.BASE_DIR, "static", "index-modern.html")
+    if os.path.exists(static_file):
+        return FileResponse(static_file)
+    return {"message": "Modern dashboard HTML not found."}
+
+
 @app.get("/health")
 def health_check():
     return {"status": "operational", "system": "SIH26081 Multi-Model Blending Microservice", "version": "2.5.0"}

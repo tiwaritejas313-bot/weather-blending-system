@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIH26081 — Hybrid Weather Forecast Blending System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800;900&family=Work+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap">
+<style>
+  :root{
+    --bg:#f5f1e6;
+    --surface:#ffffff;
+    --surface-2:#fff9e8;
+    --ink:#111111;
+    --ink-soft:#4a463d;
+    --border:#111111;
+    --shadow-c:#111111;
+    --yellow:#ffd400;
+    --yellow-ink:#111111;
+    --orange:#ff8a00;
+    --red:#e8283f;
+    --blue:#2d5bff;
+    --coral:#ff5a36;
+    --purple:#7c4dff;
+    --card-alt:#eae4d2;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#121212; --surface:#1a1a1a; --surface-2:#201b0d;
+      --ink:#f5f1e6; --ink-soft:#c9c3b4; --border:#f5f1e6; --shadow-c:#ffd400;
+      --yellow:#ffd400; --yellow-ink:#111111;
+      --orange:#ffa733; --red:#ff5c73;
+      --blue:#7d95ff; --coral:#ff7a52; --purple:#a688ff;
+      --card-alt:#231f14;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#121212; --surface:#1a1a1a; --surface-2:#201b0d;
+    --ink:#f5f1e6; --ink-soft:#c9c3b4; --border:#f5f1e6; --shadow-c:#ffd400;
+    --yellow:#ffd400; --yellow-ink:#111111;
+    --orange:#ffa733; --red:#ff5c73;
+    --blue:#7d95ff; --coral:#ff7a52; --purple:#a688ff;
+    --card-alt:#231f14;
+  }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  @media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto;} }
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:"Work Sans", ui-sans-serif, system-ui, sans-serif;
+    font-size:16px; line-height:1.5; overflow-x:hidden;
+  }
+  h1,h2,h3{ font-family:"Unbounded", ui-sans-serif, sans-serif; text-wrap:balance; margin:0; color:var(--ink); }
+  p{ margin:0; color:var(--ink-soft); }
+  a{ color:inherit; }
+  .mono{ font-family:"JetBrains Mono", ui-monospace, monospace; }
+  .tabular{ font-variant-numeric:tabular-nums; }
+  .wrap{ max-width:1180px; margin:0 auto; padding:0 24px; }
+
+  .hard{ border:3px solid var(--border); box-shadow:6px 6px 0 var(--shadow-c); }
+  .hard-sm{ border:2.5px solid var(--border); box-shadow:4px 4px 0 var(--shadow-c); }
+  .press{ transition:transform .12s ease-out, box-shadow .12s ease-out; }
+  .press:hover{ transform:translate(-2px,-2px); box-shadow:8px 8px 0 var(--shadow-c); }
+  .press:active{ transform:translate(3px,3px); box-shadow:1px 1px 0 var(--shadow-c); }
+
+  .nav{ position:sticky; top:0; z-index:50; background:var(--bg); border-bottom:3px solid var(--border); }
+  .nav-row{ display:flex; align-items:center; justify-content:space-between; gap:16px; padding:16px 24px; max-width:1180px; margin:0 auto; }
+  .brand{ display:flex; align-items:center; gap:9px; font-family:"Unbounded"; font-weight:800; font-size:16px; }
+  .brand .dot{ width:12px; height:12px; background:var(--blue); border:2px solid var(--border); }
+  .nav-links{ display:flex; align-items:center; gap:26px; }
+  .nav-links a{
+    font-family:"JetBrains Mono"; font-size:12.5px; text-transform:uppercase; letter-spacing:.05em;
+    text-decoration:none; padding-bottom:3px; border-bottom:3px solid transparent; transition:border-color .15s;
+  }
+  .nav-links a.active, .nav-links a:hover{ border-color:var(--coral); }
+  .nav-cta{ display:flex; align-items:center; gap:12px; }
+  .btn{
+    display:inline-flex; align-items:center; gap:8px; white-space:nowrap;
+    font-family:"JetBrains Mono"; font-weight:600; font-size:13px; text-transform:uppercase; letter-spacing:.04em;
+    padding:11px 18px; background:var(--surface); color:var(--ink); text-decoration:none; cursor:pointer;
+  }
+  .btn-primary{ background:var(--yellow); color:var(--yellow-ink); }
+  .nav-toggle{ display:none; }
+  @media (max-width: 880px){
+    .nav-links{ display:none; }
+    .nav-toggle{ display:inline-flex; }
+    .nav-cta .btn-primary{ display:none; }
+  }
+  .mobile-menu{ display:none; flex-direction:column; gap:2px; padding:14px 24px 20px; border-top:3px solid var(--border); background:var(--bg); }
+  .mobile-menu.open{ display:flex; }
+  .mobile-menu a{ font-family:"JetBrains Mono"; text-transform:uppercase; font-size:13px; letter-spacing:.05em; padding:12px 4px; border-bottom:1.5px dashed var(--border); text-decoration:none; }
+  .mobile-menu a.cta{ color:var(--yellow-ink); background:var(--yellow); border-bottom:none; padding:12px 10px; margin-top:8px; font-weight:600; }
+
+  section{ padding:84px 0; }
+  .kicker{ display:inline-flex; align-items:center; gap:8px; font-family:"JetBrains Mono"; font-size:12px; text-transform:uppercase; letter-spacing:.1em; color:var(--coral); margin-bottom:14px; }
+  .kicker::before{ content:"■"; font-size:9px; }
+  .section-head{ max-width:62ch; margin:0 0 44px; }
+  .section-head h2{ font-size:clamp(26px,4vw,36px); margin-bottom:12px; }
+  .section-head.center{ text-align:center; margin-left:auto; margin-right:auto; }
+
+  /* hero */
+  .hero{ padding-top:60px; text-align:center; }
+  .avail{ display:inline-flex; gap:8px; align-items:center; font-family:"JetBrains Mono"; font-size:12px; padding:7px 14px; background:var(--surface); margin:0 auto 22px; }
+  .avail .led{ width:7px; height:7px; border-radius:50%; background:var(--red); }
+  .hero h1{ font-size:clamp(32px,5.4vw,54px); font-weight:800; line-height:1.06; margin:0 auto 18px; max-width:16ch; }
+  .hero .sub{ font-size:18px; max-width:52ch; margin:0 auto 30px; }
+  .hero-ctas{ display:flex; gap:14px; justify-content:center; flex-wrap:wrap; margin-bottom:56px; }
+
+  /* hero visual - blend ticker */
+  .blend-card{ background:var(--surface); padding:22px; text-align:left; }
+  .blend-ctx{ font-family:"JetBrains Mono"; font-size:11.5px; color:var(--ink-soft); margin-bottom:16px; }
+  .blend-row{ display:grid; grid-template-columns:1fr 1fr 1fr auto 1.3fr; gap:10px; align-items:stretch; }
+  .in-chip{ border:2.5px solid var(--border); padding:12px 14px; }
+  .in-chip .who{ font-family:"JetBrains Mono"; font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; margin-bottom:6px; display:flex; align-items:center; gap:6px;}
+  .in-chip .sw{ width:9px; height:9px; display:inline-block; }
+  .in-chip .val{ font-family:"Unbounded"; font-weight:700; font-size:19px; }
+  .blend-eq{ display:flex; align-items:center; justify-content:center; font-family:"Unbounded"; font-size:22px; color:var(--ink-soft); }
+  .out-chip{ background:var(--yellow); color:var(--yellow-ink); border:2.5px solid var(--border); padding:12px 14px; }
+  .out-chip .who{ font-family:"JetBrains Mono"; font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; margin-bottom:6px; }
+  .out-chip .val{ font-family:"Unbounded"; font-weight:800; font-size:22px; }
+  .out-chip .pi{ font-family:"JetBrains Mono"; font-size:11px; margin-top:4px; opacity:.75; }
+  @media (max-width:760px){ .blend-row{ grid-template-columns:1fr 1fr; } .blend-eq{ display:none; } .out-chip{ grid-column:1/-1; } }
+
+  /* divergence */
+  .divergence{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:28px; }
+  .div-cell{ background:var(--surface); padding:18px; }
+  .div-cell .who{ font-family:"JetBrains Mono"; font-size:11px; color:var(--ink-soft); margin-bottom:6px; }
+  .div-cell .val{ font-family:"Unbounded"; font-weight:700; font-size:24px; }
+  @media (max-width:760px){ .divergence{ grid-template-columns:1fr; } }
+
+  /* diagram */
+  .flow{ display:flex; flex-direction:column; gap:0; margin-top:36px; }
+  .flow-inputs{ display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin-bottom:6px; }
+  .flow-row{ display:grid; grid-template-columns:1fr auto 1fr; gap:18px; align-items:center; margin-bottom:18px; }
+  .flow-box{ background:var(--surface); padding:16px 18px; }
+  .flow-box .lbl{ font-family:"JetBrains Mono"; font-size:10.5px; text-transform:uppercase; color:var(--ink-soft); margin-bottom:4px; }
+  .flow-box h3{ font-size:15px; }
+  .flow-arrow{ font-family:"Unbounded"; font-size:20px; color:var(--ink-soft); text-align:center; }
+  .flow-center{ text-align:center; margin:26px 0; }
+  .flow-center .flow-box{ display:inline-block; background:var(--blue); color:#fff; }
+  .flow-center .flow-box .lbl{ color:rgba(255,255,255,.75); }
+  .flow-center .flow-box h3{ color:#fff; }
+  .flow-down{ text-align:center; font-family:"Unbounded"; font-size:20px; color:var(--ink-soft); }
+  @media (max-width:760px){ .flow-row{ grid-template-columns:1fr; } .flow-arrow{ transform:rotate(90deg); } .flow-inputs{ grid-template-columns:1fr; } }
+
+  /* formula card */
+  .formula{ background:var(--ink); color:var(--bg); padding:26px; margin-top:24px; }
+  .formula .eq{ font-family:"JetBrains Mono"; font-size:14.5px; overflow-x:auto; white-space:nowrap; margin-bottom:10px; }
+  .formula .eq.dim{ opacity:.65; font-size:13px; }
+  .formula .result{ display:flex; gap:24px; flex-wrap:wrap; margin-top:16px; font-family:"JetBrains Mono"; font-size:13.5px; }
+  .formula .result b{ color:var(--yellow); font-size:16px; }
+
+  /* alerts */
+  .alert-row{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+  .alert-card{ padding:18px; color:#fff; }
+  .alert-card.yellow{ background:var(--yellow); color:var(--yellow-ink); }
+  .alert-card.orange{ background:var(--orange); }
+  .alert-card.red{ background:var(--red); }
+  .alert-card .lvl{ font-family:"Unbounded"; font-weight:800; font-size:17px; margin-bottom:6px; }
+  .alert-card .th{ font-family:"JetBrains Mono"; font-size:12px; opacity:.85; }
+  @media (max-width:760px){ .alert-row{ grid-template-columns:1fr; } }
+
+  /* results table */
+  .tbl-wrap{ overflow-x:auto; }
+  table{ width:100%; border-collapse:collapse; background:var(--surface); min-width:640px; }
+  th,td{ text-align:left; padding:12px 14px; border-bottom:2px solid var(--border); font-size:13.5px; }
+  thead th{ font-family:"JetBrains Mono"; text-transform:uppercase; font-size:11px; letter-spacing:.04em; background:var(--card-alt); }
+  td.num, th.num{ font-family:"JetBrains Mono"; text-align:right; }
+  tr.win td{ background:var(--yellow); color:var(--yellow-ink); font-weight:600; }
+
+  .feat-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin-top:20px; }
+  .feat-card{ background:var(--surface); padding:20px; }
+  .feat-card .n{ font-family:"JetBrains Mono"; font-size:11px; color:var(--coral); margin-bottom:8px; }
+  .feat-card h3{ font-size:16px; margin-bottom:8px; }
+  .feat-card p{ font-size:14px; }
+  @media (max-width:900px){ .feat-grid{ grid-template-columns:1fr 1fr; } }
+  @media (max-width:560px){ .feat-grid{ grid-template-columns:1fr; } }
+
+  footer{ border-top:3px solid var(--border); padding:52px 0 30px; }
+  .site-map{ display:grid; grid-template-columns:2fr 1fr 1fr; gap:32px; margin-bottom:40px; }
+  .site-map .blurb{ font-size:14px; max-width:34ch; margin-top:10px; }
+  .map-col .head{ font-family:"JetBrains Mono"; font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-soft); margin-bottom:14px; }
+  .map-col a{ display:block; font-size:14.5px; text-decoration:none; padding:6px 0; border-bottom:1px dashed var(--border); }
+  .map-col a:last-child{ border-bottom:none; }
+  .foot-bottom{ display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px; font-family:"JetBrains Mono"; font-size:11.5px; color:var(--ink-soft); padding-top:22px; border-top:1.5px solid var(--border); }
+  @media (max-width:760px){ .site-map{ grid-template-columns:1fr 1fr; } }
+</style>
+</head>
+<body>
+
+<nav class="nav" id="topnav">
+  <div class="nav-row">
+    <div class="brand"><span class="dot"></span>SIH26081 · Forecast Blend</div>
+    <div class="nav-links" id="navLinks">
+      <a href="#overview" class="active">Overview</a>
+      <a href="#how">How it works</a>
+      <a href="#results">Results</a>
+      <a href="/">Console</a>
+    </div>
+    <div class="nav-cta">
+      <a href="/" class="btn btn-primary hard-sm press">Open console</a>
+      <button class="nav-toggle btn hard-sm press" id="navToggle" aria-expanded="false" aria-controls="mobileMenu">Menu</button>
+    </div>
+  </div>
+  <div class="mobile-menu" id="mobileMenu">
+    <a href="#overview">Overview</a>
+    <a href="#how">How it works</a>
+    <a href="#results">Results</a>
+    <a href="/" class="cta">Open console</a>
+  </div>
+</nav>
+
+<section class="hero" id="overview">
+  <div class="wrap">
+    <div class="avail"><span class="led"></span>NCMRWF · IMD — Smart India Hackathon 2026</div>
+    <h1>Three weather models. One forecast you can trust.</h1>
+    <p class="sub">NWP, an AI model, and an ensemble mean rarely agree. Instead of picking one, we score each model's live reliability and blend them adaptively — with a calibrated uncertainty band and an automatic IMD-style alert.</p>
+    <div class="hero-ctas">
+      <a href="/" class="btn btn-primary hard press">Open the operational console</a>
+      <a href="#how" class="btn hard press">See how it works</a>
+    </div>
+
+    <div class="blend-card hard">
+      <div class="blend-ctx mono">MUMBAI MET CENTRE · MONSOON REGIME · 24H LEAD TIME</div>
+      <div class="blend-row">
+        <div class="in-chip"><div class="who"><span class="sw" style="background:var(--blue)"></span>NWP</div><div class="val tabular">42.5 mm</div></div>
+        <div class="in-chip"><div class="who"><span class="sw" style="background:var(--coral)"></span>AI (GraphCast)</div><div class="val tabular">48.2 mm</div></div>
+        <div class="in-chip"><div class="who"><span class="sw" style="background:var(--purple)"></span>Ensemble</div><div class="val tabular">45.0 mm</div></div>
+        <div class="blend-eq">→</div>
+        <div class="out-chip">
+          <div class="who">Blended forecast</div>
+          <div class="val tabular">45.25 mm</div>
+          <div class="pi mono">80% PI 41.89–48.62 · YELLOW alert</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <span class="kicker">The problem</span>
+    <div class="section-head">
+      <h2>Same station, same lead time, three different answers.</h2>
+      <p>A forecaster is left to pick one — usually by habit — with no record of which model has actually been right lately, and no attached confidence. A model's skill shifts with lead time, regime, and ensemble spread, so a fixed weight is wrong as often as it's right.</p>
+    </div>
+    <div class="divergence">
+      <div class="div-cell hard-sm"><div class="who mono">NWP (NCMRWF)</div><div class="val tabular">42.0 mm</div></div>
+      <div class="div-cell hard-sm"><div class="who mono">AI (GraphCast)</div><div class="val tabular">48.2 mm</div></div>
+      <div class="div-cell hard-sm"><div class="who mono">Ensemble (GEFS)</div><div class="val tabular">45.0 mm</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="how">
+  <div class="wrap">
+    <span class="kicker">How it works</span>
+    <div class="section-head">
+      <h2>An adaptive weight engine, not a fixed average.</h2>
+      <p>For every forecast, an XGBoost weight model scores each input's reliability against lead time, ensemble spread, humidity, temperature, wind, and regime — then a softmax layer turns those scores into three weights that always sum to one.</p>
+    </div>
+
+    <div class="flow">
+      <div class="flow-inputs">
+        <div class="flow-box hard-sm"><div class="lbl">Input 1</div><h3>NWP model</h3></div>
+        <div class="flow-box hard-sm"><div class="lbl">Input 2</div><h3>AI model (GraphCast-style)</h3></div>
+        <div class="flow-box hard-sm"><div class="lbl">Input 3</div><h3>Ensemble mean</h3></div>
+      </div>
+      <div class="flow-down">↓ ↓ ↓</div>
+      <div class="flow-center">
+        <div class="flow-box hard"><div class="lbl">Adaptive weight engine</div><h3>XGBoost + softmax normalization</h3></div>
+      </div>
+      <div class="flow-down">↓</div>
+      <div class="flow-row" style="grid-template-columns:1fr;">
+        <div class="flow-box hard-sm" style="text-align:center;"><div class="lbl">Output</div><h3>Weighted blend · 80% conformal interval · IMD alert</h3></div>
+      </div>
+    </div>
+
+    <div class="formula">
+      <div class="eq">F_blend = w_NWP · P_NWP + w_AI · P_AI + w_Ens · P_Ens &nbsp;&nbsp; s.t. &nbsp; w_NWP + w_AI + w_Ens = 1</div>
+      <div class="eq dim">this run: P = (42.5, 48.2, 45.0) mm &nbsp; w = (0.330, 0.336, 0.335)</div>
+      <div class="result">
+        <span>Blended: <b>45.25 mm</b></span>
+        <span>80% PI: <b>41.89–48.62 mm</b></span>
+        <span>Holdout RMSE: <b>1.86 mm</b></span>
+      </div>
+    </div>
+
+    <div class="alert-row" style="margin-top:32px;">
+      <div class="alert-card yellow hard-sm"><div class="lvl">Yellow</div><div class="th mono">15–65 mm/day · be updated</div></div>
+      <div class="alert-card orange hard-sm"><div class="lvl">Orange</div><div class="th mono">65–115 mm/day · be prepared</div></div>
+      <div class="alert-card red hard-sm"><div class="lvl">Red</div><div class="th mono">&gt;115 mm/day · take action</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="results">
+  <div class="wrap">
+    <span class="kicker">Results</span>
+    <div class="section-head">
+      <h2>Benchmarked against every baseline on 2024 holdout data.</h2>
+      <p>Chronological split — train 2019–2022, validate 2023, test 2024 — so no future information leaks into training.</p>
+    </div>
+
+    <div class="tbl-wrap hard-sm">
+      <table>
+        <thead><tr><th>Strategy</th><th class="num">MAE (mm)</th><th class="num">RMSE (mm)</th><th class="num">R²</th><th class="num">Correlation</th></tr></thead>
+        <tbody>
+          <tr><td>NWP alone</td><td class="num tabular">1.4211</td><td class="num tabular">2.1656</td><td class="num tabular">0.9884</td><td class="num tabular">0.9949</td></tr>
+          <tr><td>AI alone (GraphCast)</td><td class="num tabular">2.1686</td><td class="num tabular">3.9410</td><td class="num tabular">0.9617</td><td class="num tabular">0.9823</td></tr>
+          <tr><td>Ensemble alone</td><td class="num tabular">1.5320</td><td class="num tabular">2.4194</td><td class="num tabular">0.9856</td><td class="num tabular">0.9934</td></tr>
+          <tr><td>Equal-weighted average</td><td class="num tabular">1.3466</td><td class="num tabular">1.9126</td><td class="num tabular">0.9910</td><td class="num tabular">0.9964</td></tr>
+          <tr class="win"><td>Adaptive XGBoost blend</td><td class="num tabular">1.3208</td><td class="num tabular">1.8578</td><td class="num tabular">0.9915</td><td class="num tabular">0.9967</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="feat-grid">
+      <div class="feat-card hard-sm"><div class="n mono">01</div><h3>Weights that move</h3><p>Recomputed per station, per lead time, per run — not fixed at deployment.</p></div>
+      <div class="feat-card hard-sm"><div class="n mono">02</div><h3>Calibrated uncertainty</h3><p>Conformal prediction gives every forecast an 80% interval, not just a point value.</p></div>
+      <div class="feat-card hard-sm"><div class="n mono">03</div><h3>Zero target leakage</h3><p>Reference rainfall is used only to build training targets and score results — never as an input feature.</p></div>
+      <div class="feat-card hard-sm"><div class="n mono">04</div><h3>Geospatially aware</h3><p>Every forecast is tied to a real station and grid cell across the Indian meteorological network.</p></div>
+      <div class="feat-card hard-sm"><div class="n mono">05</div><h3>Explainable</h3><p>Reports which model drove the number, and by how much — auditable, not a black box.</p></div>
+      <div class="feat-card hard-sm"><div class="n mono">06</div><h3>Real-data ready</h3><p>Swap the sample CSV for ERA5 / IMDAA / GEFS / GraphCast without touching the architecture.</p></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="site-map">
+      <div>
+        <div class="brand"><span class="dot"></span>SIH26081 · Forecast Blend</div>
+        <p class="blurb">A dynamic, machine-learning hybrid weather forecasting system that adaptively blends NWP, AI, and ensemble models by reliability, not fixed weight.</p>
+      </div>
+      <div class="map-col">
+        <div class="head">Project</div>
+        <a href="#overview">Overview</a>
+        <a href="#how">How it works</a>
+        <a href="#results">Results</a>
+      </div>
+      <div class="map-col">
+        <div class="head">Operate</div>
+        <a href="/">Console</a>
+        <a href="/docs">API docs</a>
+        <a href="/health">System status</a>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>SIH26081 — Hybrid Weather Forecast Blending System</span>
+      <span>NCMRWF · IMD integration concept</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  (function(){
+    var toggle = document.getElementById('navToggle');
+    var menu = document.getElementById('mobileMenu');
+    toggle.addEventListener('click', function(){
+      var open = menu.classList.toggle('open');
+      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+    menu.querySelectorAll('a').forEach(function(a){
+      a.addEventListener('click', function(){ menu.classList.remove('open'); toggle.setAttribute('aria-expanded','false'); });
+    });
+
+    var navLinks = document.querySelectorAll('.nav-links a[href^="#"]');
+    var sections = ['overview','how','results'].map(function(id){ return document.getElementById(id); });
+    var byId = {};
+    navLinks.forEach(function(a){ byId[a.getAttribute('href').slice(1)] = a; });
+    if('IntersectionObserver' in window){
+      var obs = new IntersectionObserver(function(entries){
+        entries.forEach(function(entry){
+          if(entry.isIntersecting){
+            navLinks.forEach(function(a){ a.classList.remove('active'); });
+            var link = byId[entry.target.id];
+            if(link) link.classList.add('active');
+          }
+        });
+      }, { rootMargin: '-45% 0px -50% 0px' });
+      sections.forEach(function(s){ if(s) obs.observe(s); });
+    }
+  })();
+</script>
+</body>
+</html>
