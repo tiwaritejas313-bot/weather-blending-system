@@ -8,4 +8,3 @@ data/
 generate_sample_data.py
 ml/train.py
 ml/evaluation.py
-results/plots/

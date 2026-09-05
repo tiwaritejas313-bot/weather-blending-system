@@ -34,6 +34,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Mount Publication Plot Gallery static route
+if os.path.exists(config.PLOTS_DIR):
+    app.mount("/plots", StaticFiles(directory=config.PLOTS_DIR), name="plots")
+
+
 
 class ForecastInputSchema(BaseModel):
     latitude: float = Field(..., example=19.0760, description="Latitude in degrees N")
